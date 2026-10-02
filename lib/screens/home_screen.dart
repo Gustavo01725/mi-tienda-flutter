@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/auth_state.dart';
 import '../services/catalog_state.dart';
+import '../services/cart_state.dart';
+import 'cart_screen.dart';
 import 'inventory_screen.dart';
+import 'orders_screen.dart';
 import 'login_screen.dart';
 import 'product_detail_screen.dart';
 import 'product_tile.dart';
@@ -40,6 +43,22 @@ class _HomeScreenState extends State<HomeScreen> {
               icon: const Icon(Icons.people_outline),
               onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const UsersScreen())),
             ),
+          if (user != null) ...[
+            IconButton(
+              tooltip: 'Pedidos',
+              icon: const Icon(Icons.receipt_long_outlined),
+              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const OrdersScreen())),
+            ),
+            IconButton(
+              tooltip: 'Carrito',
+              icon: Badge(
+                isLabelVisible: context.watch<CartState>().cart.count > 0,
+                label: Text('${context.watch<CartState>().cart.count}'),
+                child: const Icon(Icons.shopping_cart_outlined),
+              ),
+              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const CartScreen())),
+            ),
+          ],
           if (user == null)
             TextButton(
               onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const LoginScreen())),

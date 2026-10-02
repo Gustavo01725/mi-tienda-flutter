@@ -15,4 +15,8 @@ flutter run --dart-define=API_URL=https://tu-dominio.com   # emulador Android lo
 ```
 
 Los cambios hechos en la web (productos, stock, usuarios) aparecen en la app en ≤5 s y viceversa.
-Pendiente: carrito/checkout y pagos (Stripe/Kushki) y pedidos.
+Carrito (compartido con la web), checkout con Stripe PaymentSheet, historial de pedidos y gestión de
+pedidos del vendedor (confirmar / enviar al almacén) sincronizados cada 5 s.
+
+Pagos: solo Stripe. Kushki (Ecuador) no está en la API. El pago con tarjeta no se ha probado de extremo a extremo;
+requiere `STRIPE_KEY`/`STRIPE_SECRET` en la web. Android usa `FlutterFragmentActivity` y tema AppCompat (requisito de flutter_stripe).

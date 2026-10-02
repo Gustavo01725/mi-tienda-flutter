@@ -34,3 +34,11 @@ la app solo tendría que disparar el mismo `sync()` al recibirlo.
 
 La web usa SQLite por defecto en `.env.example`. Para que web y app compartan datos en
 producción la web debe estar desplegada (la app solo habla con la API, nunca con la BD).
+
+## Carrito, checkout y pedidos
+
+- `routes/api.php` incluye `/cart`, `/checkout/intent`, `/orders`, `/sync/orders` y `/seller/orders*`.
+- **Pagos:** solo Stripe (PaymentSheet). La web debe tener `STRIPE_KEY`, `STRIPE_SECRET` y el webhook `payment_intent.succeeded`
+  configurados (ya los usa). Kushki (Ecuador) no está expuesto en la API.
+- En `Order` y `OrderDetail` el cambio de estado debe pasar por `Order::update()` (como ya hace la web) para que `updated_at`
+  avance y `/api/sync/orders` lo entregue a la app.
