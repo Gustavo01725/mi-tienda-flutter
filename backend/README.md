@@ -39,7 +39,7 @@ producción la web debe estar desplegada (la app solo habla con la API, nunca co
 
 - `routes/api.php` incluye `/cart`, `/checkout/intent`, `/orders`, `/sync/orders` y `/seller/orders*`.
 - **Pagos:** solo Stripe (PaymentSheet). La web debe tener `STRIPE_KEY`, `STRIPE_SECRET` y el webhook `payment_intent.succeeded`
-  configurados (ya los usa). Kushki (Ecuador) no está expuesto en la API.
+  configurados (ya los usa). Kushki (Ecuador): `GET /api/checkout/gateway` devuelve la pasarela por IP (igual que la web) y `POST /api/checkout/kushki` cobra con el token que genera la app (`KUSHKI_*` en `.env`). La tarjeta se tokeniza en la app directamente contra Kushki.
 - En `Order` y `OrderDetail` el cambio de estado debe pasar por `Order::update()` (como ya hace la web) para que `updated_at`
   avance y `/api/sync/orders` lo entregue a la app.
 

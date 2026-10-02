@@ -18,7 +18,7 @@ Los cambios hechos en la web (productos, stock, usuarios) aparecen en la app en 
 Carrito (compartido con la web), checkout con Stripe PaymentSheet, historial de pedidos y gestión de
 pedidos del vendedor (confirmar / enviar al almacén) sincronizados cada 5 s.
 
-Pagos: solo Stripe. Kushki (Ecuador) no está en la API. El pago con tarjeta no se ha probado de extremo a extremo;
+Pagos: Stripe (resto del mundo) y Kushki (Ecuador), elegidos por la API según el país, igual que la web. Ninguno se ha probado de extremo a extremo;
 requiere `STRIPE_KEY`/`STRIPE_SECRET` en la web. Android usa `FlutterFragmentActivity` y tema AppCompat (requisito de flutter_stripe).
 
 ## Notificaciones

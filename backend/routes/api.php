@@ -38,6 +38,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/cart/{id}', [CartController::class, 'remove'])->whereNumber('id');
 
     // Checkout (Stripe PaymentSheet) y pedidos
+    Route::get('/checkout/gateway', [CheckoutController::class, 'gateway']);
+    Route::post('/checkout/kushki', [CheckoutController::class, 'kushki']);
     Route::post('/checkout/intent', [CheckoutController::class, 'intent']);
     Route::post('/orders/{id}/confirm-payment', [CheckoutController::class, 'confirm'])->whereNumber('id');
     Route::get('/orders', [OrderController::class, 'index']);
