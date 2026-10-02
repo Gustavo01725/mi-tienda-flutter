@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'package:flutter/foundation.dart' show defaultTargetPlatform, TargetPlatform;
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
@@ -44,7 +44,7 @@ class PushService {
 
   Future<void> _register(String token) async {
     try {
-      await api.post('/devices', {'token': token, 'platform': Platform.isIOS ? 'ios' : 'android'});
+      await api.post('/devices', {'token': token, 'platform': defaultTargetPlatform == TargetPlatform.iOS ? 'ios' : 'android'});
     } catch (_) {
       // se reintenta al siguiente inicio de sesión / refresh del token
     }
