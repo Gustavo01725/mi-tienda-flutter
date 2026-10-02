@@ -7,6 +7,9 @@ class AuthState extends ChangeNotifier {
   final Api api;
   AuthState(this.api);
 
+  /// Se ejecuta antes de invalidar el token (p. ej. para desregistrar el push).
+  Future<void> Function()? beforeLogout;
+
   AppUser? user;
   bool ready = false;
 
@@ -42,6 +45,9 @@ class AuthState extends ChangeNotifier {
       _store(await api.post('/auth/register', {'name': name, 'email': email, 'password': password}));
 
   Future<void> logout() async {
+    try {
+      await beforeLogout?.call();
+    } catch (_) {}
     try {
       await api.post('/auth/logout');
     } catch (_) {}

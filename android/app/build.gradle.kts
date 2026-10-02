@@ -52,3 +52,9 @@ flutter {
 dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
 }
+
+// Push (FCM): el plugin solo se aplica si se añadió android/app/google-services.json, para que la app
+// siga compilando sin Firebase configurado.
+if (file("google-services.json").exists()) {
+    apply(plugin = "com.google.gms.google-services")
+}

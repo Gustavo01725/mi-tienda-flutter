@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import '../config.dart';
 import '../models/app_notification.dart';
@@ -10,7 +10,11 @@ import 'api.dart';
 /// que lleguen después, para no bombardear con el historial al abrir la app.
 class NotificationsState extends ChangeNotifier {
   final Api api;
-  NotificationsState(this.api);
+  NotificationsState(this.api, {this.pushActive});
+
+  /// Si FCM está operativo, en segundo plano el aviso lo muestra el push y no este servicio
+  /// (evita la notificación duplicada).
+  final bool Function()? pushActive;
 
   final _plugin = FlutterLocalNotificationsPlugin();
   final Map<String, AppNotification> _items = {};
@@ -87,6 +91,9 @@ class NotificationsState extends ChangeNotifier {
 
   Future<void> _show(AppNotification n) async {
     if (!_ready) return;
+    final foreground = WidgetsBinding.instance.lifecycleState == null ||
+        WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed;
+    if (!foreground && (pushActive?.call() ?? false)) return;
     try {
       await _plugin.show(
         id: n.id.hashCode & 0x7fffffff,

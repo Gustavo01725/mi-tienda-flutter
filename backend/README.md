@@ -49,3 +49,20 @@ producción la web debe estar desplegada (la app solo habla con la API, nunca co
 nueva venta, tienda aprobada, liquidación). No requiere cambios en la web. La app los consulta con el mismo ciclo de 5 s
 y los muestra como notificación del sistema mientras está abierta o en segundo plano reciente.
 Push con la app cerrada requiere Firebase (FCM); ver README principal.
+
+## Push con Firebase (FCM)
+
+1. En la consola de Firebase crea un proyecto y añade la app Android (`com.mitienda.mi_tienda`, o el id que uses).
+   Descarga `google-services.json` → `android/app/` del repo Flutter. Para iOS, `GoogleService-Info.plist` y subir la clave APNs.
+2. Project settings → Service accounts → *Generate new private key*. Guarda el JSON **fuera de git** en el servidor web.
+3. En la web: `composer require kreait/laravel-firebase` y en `.env`: `FIREBASE_CREDENTIALS=/ruta/segura/service-account.json`.
+4. Copia `database/migrations/…device_tokens…`, `app/Models/DeviceToken.php`, `app/Listeners/SendPushForNotification.php`,
+   `DeviceController` y `routes/api.php`; ejecuta `php artisan migrate`.
+5. Registra el listener en `AppServiceProvider::boot()`:
+   ```php
+   \Illuminate\Support\Facades\Event::listen(
+       \Illuminate\Notifications\Events\NotificationSent::class,
+       \App\Listeners\SendPushForNotification::class,
+   );
+   ```
+   No hay que tocar las clases de notificación existentes: el listener reenvía como push cada aviso de `database`.

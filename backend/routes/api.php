@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CartController;
 use App\Http\Controllers\Api\CatalogController;
+use App\Http\Controllers\Api\DeviceController;
 use App\Http\Controllers\Api\CheckoutController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\OrderController;
@@ -25,6 +26,10 @@ Route::get('/sync/products', [SyncController::class, 'products']);
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/auth/me', [AuthController::class, 'me']);
     Route::post('/auth/logout', [AuthController::class, 'logout']);
+
+    // Push (tokens FCM)
+    Route::post('/devices', [DeviceController::class, 'store']);
+    Route::delete('/devices', [DeviceController::class, 'destroy']);
 
     // Avisos (tabla notifications)
     Route::get('/notifications', [NotificationController::class, 'index']);

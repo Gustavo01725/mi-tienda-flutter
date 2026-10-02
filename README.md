@@ -23,7 +23,7 @@ requiere `STRIPE_KEY`/`STRIPE_SECRET` en la web. Android usa `FlutterFragmentAct
 
 ## Notificaciones
 
-Centro de avisos (campana) alimentado por la tabla `notifications` de la web: pedido confirmado/en almacén, nueva venta,
-tienda aprobada, liquidación. Los avisos nuevos aparecen también como notificación del sistema (`flutter_local_notifications`),
-con la app abierta o mientras el sistema la mantenga en segundo plano. **No hay push con la app cerrada**: eso requiere
-Firebase Cloud Messaging (proyecto Firebase, `google-services.json`, y `laravel-firebase` en la web con una tabla de tokens).
+Centro de avisos (campana) alimentado por la tabla `notifications` de la web, y notificaciones del sistema.
+Con la app abierta las muestra `flutter_local_notifications`; con la app en segundo plano o cerrada llegan por **push de
+Firebase (FCM)**, que es opcional: sin `google-services.json` la app compila y funciona igual, solo sin push de fondo.
+Configuración paso a paso en `backend/README.md` → *Push con Firebase*.

@@ -7,17 +7,20 @@ import 'services/cart_state.dart';
 import 'services/catalog_state.dart';
 import 'services/notifications_state.dart';
 import 'services/orders_state.dart';
+import 'services/push_service.dart';
 
 void main() {
   final api = Api();
+  final push = PushService(api);
   runApp(MultiProvider(
     providers: [
       Provider.value(value: api),
-      ChangeNotifierProvider(create: (_) => AuthState(api)..restore()),
+      Provider.value(value: push),
+      ChangeNotifierProvider(create: (_) => AuthState(api)..beforeLogout = push.unregister..restore()),
       ChangeNotifierProvider(create: (_) => CatalogState(api)..start()),
       ChangeNotifierProvider(create: (_) => CartState(api)),
       ChangeNotifierProvider(create: (_) => OrdersState(api)),
-      ChangeNotifierProvider(create: (_) => NotificationsState(api)),
+      ChangeNotifierProvider(create: (_) => NotificationsState(api, pushActive: () => push.active)),
     ],
     child: const MiTiendaApp(),
   ));
@@ -48,6 +51,7 @@ class _Root extends StatelessWidget {
       context.read<CartState>().setLoggedIn(loggedIn);
       context.read<OrdersState>().setLoggedIn(loggedIn);
       context.read<NotificationsState>().setLoggedIn(loggedIn);
+      if (loggedIn) context.read<PushService>().init();
     });
     if (!auth.ready) return const Scaffold(body: Center(child: CircularProgressIndicator()));
     return const HomeScreen();
