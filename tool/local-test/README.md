@@ -14,7 +14,7 @@ con variantes, y deja todo listo para probar sin Stripe, Kushki ni Firebase.
 El pago se simula con `pay.php` (llama a `Order::markPaid`, lo mismo que hace el webhook). Para probar pagos reales usa claves de
 **prueba** (`STRIPE_KEY/SECRET`, `KUSHKI_*` con `KUSHKI_ENV=test`) en el `.env` de la web local.
 Ojo con `php artisan tinker` en scripts: se queda esperando; los scripts de esta carpeta arrancan Laravel directamente.
-`.local-web/` no se sube a git.
+`.local-web/` no se sube a git. Para probar en dispositivo sigue `docs/CHECKLIST.md`.
 
 ## Prueba de UI sin emulador (Chromium)
 
