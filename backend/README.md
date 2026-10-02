@@ -42,3 +42,10 @@ producción la web debe estar desplegada (la app solo habla con la API, nunca co
   configurados (ya los usa). Kushki (Ecuador) no está expuesto en la API.
 - En `Order` y `OrderDetail` el cambio de estado debe pasar por `Order::update()` (como ya hace la web) para que `updated_at`
   avance y `/api/sync/orders` lo entregue a la app.
+
+## Notificaciones
+
+`/api/notifications` expone la tabla `notifications` (los avisos que la web ya genera: pedido confirmado/en almacén,
+nueva venta, tienda aprobada, liquidación). No requiere cambios en la web. La app los consulta con el mismo ciclo de 5 s
+y los muestra como notificación del sistema mientras está abierta o en segundo plano reciente.
+Push con la app cerrada requiere Firebase (FCM); ver README principal.

@@ -5,6 +5,7 @@ import 'services/api.dart';
 import 'services/auth_state.dart';
 import 'services/cart_state.dart';
 import 'services/catalog_state.dart';
+import 'services/notifications_state.dart';
 import 'services/orders_state.dart';
 
 void main() {
@@ -16,6 +17,7 @@ void main() {
       ChangeNotifierProvider(create: (_) => CatalogState(api)..start()),
       ChangeNotifierProvider(create: (_) => CartState(api)),
       ChangeNotifierProvider(create: (_) => OrdersState(api)),
+      ChangeNotifierProvider(create: (_) => NotificationsState(api)),
     ],
     child: const MiTiendaApp(),
   ));
@@ -45,6 +47,7 @@ class _Root extends StatelessWidget {
       if (!context.mounted) return;
       context.read<CartState>().setLoggedIn(loggedIn);
       context.read<OrdersState>().setLoggedIn(loggedIn);
+      context.read<NotificationsState>().setLoggedIn(loggedIn);
     });
     if (!auth.ready) return const Scaffold(body: Center(child: CircularProgressIndicator()));
     return const HomeScreen();

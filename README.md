@@ -20,3 +20,10 @@ pedidos del vendedor (confirmar / enviar al almacén) sincronizados cada 5 s.
 
 Pagos: solo Stripe. Kushki (Ecuador) no está en la API. El pago con tarjeta no se ha probado de extremo a extremo;
 requiere `STRIPE_KEY`/`STRIPE_SECRET` en la web. Android usa `FlutterFragmentActivity` y tema AppCompat (requisito de flutter_stripe).
+
+## Notificaciones
+
+Centro de avisos (campana) alimentado por la tabla `notifications` de la web: pedido confirmado/en almacén, nueva venta,
+tienda aprobada, liquidación. Los avisos nuevos aparecen también como notificación del sistema (`flutter_local_notifications`),
+con la app abierta o mientras el sistema la mantenga en segundo plano. **No hay push con la app cerrada**: eso requiere
+Firebase Cloud Messaging (proyecto Firebase, `google-services.json`, y `laravel-firebase` en la web con una tabla de tokens).

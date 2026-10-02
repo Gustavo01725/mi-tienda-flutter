@@ -5,6 +5,8 @@ import '../services/catalog_state.dart';
 import '../services/cart_state.dart';
 import 'cart_screen.dart';
 import 'inventory_screen.dart';
+import '../services/notifications_state.dart';
+import 'notifications_screen.dart';
 import 'orders_screen.dart';
 import 'login_screen.dart';
 import 'product_detail_screen.dart';
@@ -44,6 +46,15 @@ class _HomeScreenState extends State<HomeScreen> {
               onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const UsersScreen())),
             ),
           if (user != null) ...[
+            IconButton(
+              tooltip: 'Avisos',
+              icon: Badge(
+                isLabelVisible: context.watch<NotificationsState>().unread > 0,
+                label: Text('${context.watch<NotificationsState>().unread}'),
+                child: const Icon(Icons.notifications_outlined),
+              ),
+              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const NotificationsScreen())),
+            ),
             IconButton(
               tooltip: 'Pedidos',
               icon: const Icon(Icons.receipt_long_outlined),
