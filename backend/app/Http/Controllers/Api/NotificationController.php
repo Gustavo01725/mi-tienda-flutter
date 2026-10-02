@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Support\SyncCursor;
 use Illuminate\Http\Request;
 
 /**
@@ -20,8 +21,8 @@ class NotificationController extends Controller
         $now = now();
         $q = $request->user()->notifications()->latest();
 
-        if ($since = $request->query('since')) {
-            $q->where('created_at', '>', $since);
+        if ($since = SyncCursor::parse($request->query('since'))) {
+            $q->where('created_at', '>=', $since);
         }
 
         return response()->json([

@@ -17,10 +17,14 @@ use Throwable;
  */
 class SendPushForNotification
 {
-    public function __construct(private Messaging $messaging) {}
-
     public function handle(NotificationSent $event): void
     {
+        // Laravel 11/12 descubre este listener solo (por el tipo de $event en handle). Si kreait aún
+        // no está instalado o configurado, no hace nada: nunca debe romper un aviso de la web.
+        if (! interface_exists(Messaging::class)) {
+            return;
+        }
+
         // La notificación ya se escribe en 'database'; solo se duplica ese canal, una vez por aviso.
         if ($event->channel !== 'database' || ! $event->notifiable instanceof \App\Models\User) {
             return;
@@ -42,7 +46,7 @@ class SendPushForNotification
                 ->withNotification(FcmNotification::create($this->title($event->notification), $message))
                 ->withData(array_filter(['order_id' => isset($data['order_id']) ? (string) $data['order_id'] : null]));
 
-            $report = $this->messaging->sendMulticast($cloud, $tokens);
+            $report = app(Messaging::class)->sendMulticast($cloud, $tokens);
 
             // Tokens de teléfonos que desinstalaron la app: se limpian.
             if ($report->hasFailures()) {

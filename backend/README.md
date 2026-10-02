@@ -58,11 +58,6 @@ Push con la app cerrada requiere Firebase (FCM); ver README principal.
 3. En la web: `composer require kreait/laravel-firebase` y en `.env`: `FIREBASE_CREDENTIALS=/ruta/segura/service-account.json`.
 4. Copia `database/migrations/…device_tokens…`, `app/Models/DeviceToken.php`, `app/Listeners/SendPushForNotification.php`,
    `DeviceController` y `routes/api.php`; ejecuta `php artisan migrate`.
-5. Registra el listener en `AppServiceProvider::boot()`:
-   ```php
-   \Illuminate\Support\Facades\Event::listen(
-       \Illuminate\Notifications\Events\NotificationSent::class,
-       \App\Listeners\SendPushForNotification::class,
-   );
-   ```
+5. El listener se descubre solo (Laravel 11/12 registra las clases de `app/Listeners` por el tipo de `handle()`): **no lo registres a mano**
+   o cada aviso se enviaría dos veces. Mientras `kreait/laravel-firebase` no esté instalado, no hace nada.
    No hay que tocar las clases de notificación existentes: el listener reenvía como push cada aviso de `database`.

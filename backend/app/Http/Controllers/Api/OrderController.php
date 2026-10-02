@@ -7,6 +7,7 @@ use App\Models\Order;
 use App\Models\User;
 use App\Notifications\OrderArrivedWarehouseNotification;
 use App\Notifications\OrderStatusUpdatedNotification;
+use App\Support\SyncCursor;
 use Illuminate\Http\Request;
 
 /** Pedidos del cliente y gestión de pedidos del vendedor (mismas transiciones que la web). */
@@ -40,8 +41,8 @@ class OrderController extends Controller
             $w->where('user_id', $user->id)
                 ->orWhereHas('orderDetails', fn ($d) => $d->where('seller_id', $user->id));
         });
-        if ($since = $request->query('since')) {
-            $q->where('updated_at', '>', $since);
+        if ($since = SyncCursor::parse($request->query('since'))) {
+            $q->where('updated_at', '>=', $since);
         }
 
         return response()->json([

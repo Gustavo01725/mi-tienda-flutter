@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\ProductPresenter;
 use App\Models\Product;
 use App\Models\User;
+use App\Support\SyncCursor;
 use Illuminate\Http\Request;
 
 /**
@@ -24,8 +25,8 @@ class SyncController extends Controller
         $since = $request->query('since');
 
         $q = Product::active()->with(['stocks', 'category', 'brand']);
-        if ($since) {
-            $q->where('updated_at', '>', $since);
+        if ($since = SyncCursor::parse($since)) {
+            $q->where('updated_at', '>=', $since);
         }
 
         return response()->json([
@@ -39,8 +40,8 @@ class SyncController extends Controller
     {
         $now = now();
         $q = User::query();
-        if ($since = $request->query('since')) {
-            $q->where('updated_at', '>', $since);
+        if ($since = SyncCursor::parse($request->query('since'))) {
+            $q->where('updated_at', '>=', $since);
         }
 
         return response()->json([

@@ -1,0 +1,11 @@
+<?php require getcwd()."/vendor/autoload.php"; $app=require getcwd()."/bootstrap/app.php"; $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap();
+use App\Models\{User,Category,Product,ProductStock,Shop};
+User::query()->delete();
+$mk = function($n,$e,$t){ $u=new User(['name'=>$n,'email'=>$e,'password'=>'secret123']); $u->user_type=$t; $u->email_verified=1; $u->save(); return $u; };
+$mk('Admin','admin@t.com','admin'); $seller=$mk('Vendedor','seller@t.com','seller'); $mk('Cliente','cust@t.com','customer');
+Shop::create(['user_id'=>$seller->id,'name'=>'Tienda V','email'=>'seller@t.com','address'=>'x','id_front_image'=>'a.png','id_back_image'=>'b.png','status'=>1]);
+$cat=Category::create(['name'=>'Ropa','slug'=>'ropa','status'=>1,'variant_type'=>'apparel']);
+$p=Product::create(['name'=>'Camiseta','slug'=>'camiseta','category_id'=>$cat->id,'added_by'=>$seller->id,'unit_price'=>20,'discount'=>10,'discount_type'=>'percent','unit'=>'pza','shipping_cost'=>2,'published'=>1,'approved'=>1]);
+ProductStock::create(['product_id'=>$p->id,'size'=>'M','color'=>'negro','price'=>20,'qty'=>5]);
+ProductStock::create(['product_id'=>$p->id,'size'=>'L','color'=>'negro','price'=>20,'qty'=>2]);
+echo "seeded\n";
