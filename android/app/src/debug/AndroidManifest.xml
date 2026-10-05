@@ -4,4 +4,8 @@
          to allow setting breakpoints, to provide hot reload, etc.
     -->
     <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- Solo en debug/profile: permite http:// para probar contra la web local
+         (emulador: http://10.0.2.2:8000). Android 9+ lo bloquea por defecto y la app
+         solo vería "Sin conexión". La compilación release sigue exigiendo HTTPS. -->
+    <application android:usesCleartextTraffic="true"/>
 </manifest>
