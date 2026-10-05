@@ -12,6 +12,10 @@ class AppNotification {
         read = j['read'] ?? false,
         createdAt = DateTime.tryParse(j['created_at'] ?? '');
 
+  AppNotification._(this.id, this.message, this.type, this.orderId, this.read, this.createdAt);
+
+  AppNotification copyRead() => AppNotification._(id, message, type, orderId, true, createdAt);
+
   String get title => switch (type) {
         'SellerNewOrderNotification' => 'Nueva venta',
         'OrderArrivedWarehouseNotification' => 'Pedido en almacén',

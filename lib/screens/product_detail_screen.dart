@@ -42,13 +42,17 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final p = context.watch<CatalogState>().products.where((e) => e.id == widget.productId).firstOrNull;
+    final p = context.watch<CatalogState>().byId(widget.productId);
     if (p == null) {
       return Scaffold(appBar: AppBar(), body: const Center(child: Text('Este producto ya no está disponible')));
     }
     final hasVariants = p.stocks.any((s) => s.variant.isNotEmpty);
     // Si la variante elegida se agotó en la web mientras se miraba, se descarta.
     if (_variant != null && !p.stocks.any((s) => s.variant == _variant && s.qty > 0)) _variant = null;
+    // El precio que se cobra es el de la variante (con descuento), no siempre el precio base.
+    final selected = p.stocks.where((s) => s.variant == (_variant ?? '')).firstOrNull ??
+        (hasVariants ? null : p.stocks.firstOrNull);
+    final shownPrice = selected?.finalPrice ?? p.price;
 
     return Scaffold(
       appBar: AppBar(title: Text(p.name)),
@@ -65,7 +69,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             Text(p.name, style: Theme.of(context).textTheme.titleLarge),
             if (p.category != null) Text(p.category!, style: const TextStyle(color: Colors.grey)),
             const SizedBox(height: 8),
-            Text('\$${p.price.toStringAsFixed(2)}', style: Theme.of(context).textTheme.headlineSmall),
+            Text('\$${shownPrice.toStringAsFixed(2)}', style: Theme.of(context).textTheme.headlineSmall),
             const SizedBox(height: 12),
             Text(hasVariants ? 'Elige una opción' : 'Disponibilidad', style: Theme.of(context).textTheme.titleMedium),
             if (hasVariants)

@@ -21,7 +21,7 @@ class ProductTile extends StatelessWidget {
               child: CachedNetworkImage(
                 imageUrl: p.thumbnail,
                 fit: BoxFit.cover,
-                errorWidget: (_, __, ___) => const Icon(Icons.image_not_supported_outlined),
+                errorWidget: (_, _, _) => const Icon(Icons.image_not_supported_outlined),
               ),
             ),
           ),

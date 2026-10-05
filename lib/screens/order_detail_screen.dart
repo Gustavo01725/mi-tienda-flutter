@@ -5,13 +5,14 @@ import 'orders_screen.dart';
 
 class OrderDetailScreen extends StatelessWidget {
   final int orderId;
-  final bool sellerView;
-  const OrderDetailScreen({super.key, required this.orderId, this.sellerView = false});
+  const OrderDetailScreen({super.key, required this.orderId});
 
   @override
   Widget build(BuildContext context) {
-    final o = context.watch<OrdersState>().orders.where((e) => e.id == orderId).firstOrNull;
+    final o = context.watch<OrdersState>().byId(orderId);
     if (o == null) return Scaffold(appBar: AppBar(), body: const Center(child: Text('Pedido no encontrado')));
+    // El rol viene del servidor: así funciona igual al abrir el pedido desde un aviso.
+    final sellerView = o.isSale;
     final ship = o.shipping;
     return Scaffold(
       appBar: AppBar(title: Text(o.code)),
@@ -26,7 +27,7 @@ class OrderDetailScreen extends StatelessWidget {
             trailing: Text('\$${(i.price * i.quantity).toStringAsFixed(2)}'),
           ),
         const Divider(),
-        Text('Total: \$${o.total.toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.bold)),
+        Text('${sellerView ? 'Tu parte del pedido' : 'Total'}: \$${o.total.toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.bold)),
         if (ship.isNotEmpty) ...[
           const SizedBox(height: 16),
           Text('Envío a', style: Theme.of(context).textTheme.titleSmall),

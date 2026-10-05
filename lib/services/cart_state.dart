@@ -15,23 +15,34 @@ class CartState extends ChangeNotifier {
   Timer? _timer;
   bool _active = false;
 
+  /// Cambia con cada sesión: la respuesta de una petición lanzada con la sesión anterior se descarta
+  /// (si no, el carrito del usuario anterior reaparecería tras cerrar sesión).
+  int _session = 0;
+
+  /// Cambia con cada modificación hecha en la app: un refresco periódico que salió antes no puede
+  /// pisar con datos viejos el resultado de "añadir" o "quitar".
+  int _rev = 0;
+
   /// Se llama cuando cambia la sesión.
   void setLoggedIn(bool loggedIn) {
     if (loggedIn == _active) return;
     _active = loggedIn;
+    _session++;
     _timer?.cancel();
+    cart = Cart.empty();
     if (loggedIn) {
       refresh();
       _timer = Timer.periodic(const Duration(seconds: syncSeconds), (_) => refresh());
-    } else {
-      cart = Cart.empty();
-      notifyListeners();
     }
+    notifyListeners();
   }
 
   Future<void> refresh() async {
+    final session = _session, rev = _rev;
     try {
-      cart = Cart.fromJson(await api.get('/cart'));
+      final r = await api.get('/cart');
+      if (session != _session || rev != _rev) return;
+      cart = Cart.fromJson(r);
       notifyListeners();
     } on ApiException {
       // red caída: se conserva el último carrito
@@ -39,7 +50,12 @@ class CartState extends ChangeNotifier {
   }
 
   Future<void> _mutate(Future<dynamic> Function() call) async {
-    cart = Cart.fromJson(await call());
+    final session = _session;
+    _rev++;
+    final r = await call();
+    if (session != _session) return;
+    _rev++; // invalida también los refrescos que salieron mientras se esperaba esta respuesta
+    cart = Cart.fromJson(r);
     notifyListeners();
   }
 

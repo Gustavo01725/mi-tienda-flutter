@@ -30,7 +30,16 @@ class CartScreen extends StatelessWidget {
                     ListTile(
                       leading: SizedBox(width: 56, child: CachedNetworkImage(imageUrl: i.thumbnail, fit: BoxFit.cover)),
                       title: Text(i.name, maxLines: 2, overflow: TextOverflow.ellipsis),
-                      subtitle: Text([if (i.variantLabel.isNotEmpty) i.variantLabel, '\$${i.price.toStringAsFixed(2)}'].join(' · ')),
+                      subtitle: Text(
+                        [
+                          if (i.variantLabel.isNotEmpty) i.variantLabel,
+                          '\$${i.price.toStringAsFixed(2)}',
+                          // El stock pudo bajar por ventas en la web: el pago lo rechazaría.
+                          if (i.availableStock != null && i.quantity > i.availableStock!)
+                            i.availableStock! == 0 ? 'Agotado' : 'Solo quedan ${i.availableStock}',
+                        ].join(' · '),
+                        style: i.availableStock != null && i.quantity > i.availableStock! ? const TextStyle(color: Colors.red) : null,
+                      ),
                       trailing: Row(mainAxisSize: MainAxisSize.min, children: [
                         IconButton(
                           icon: const Icon(Icons.remove_circle_outline),

@@ -23,6 +23,9 @@ class NotificationsState extends ChangeNotifier {
   Timer? _timer;
   bool _active = false, _busy = false, _ready = false, _firstLoad = true;
 
+  /// Ver CartState._session: los avisos de la sesión anterior no deben reaparecer ni dispararse.
+  int _session = 0;
+
   List<AppNotification> get items => _items.values.toList()
     ..sort((a, b) => (b.createdAt ?? DateTime(0)).compareTo(a.createdAt ?? DateTime(0)));
 
@@ -46,34 +49,40 @@ class NotificationsState extends ChangeNotifier {
   void setLoggedIn(bool loggedIn) {
     if (loggedIn == _active) return;
     _active = loggedIn;
+    _session++;
     _timer?.cancel();
+    _items.clear();
+    _since = null;
+    unread = 0;
+    _firstLoad = true;
+    _busy = false;
     if (loggedIn) {
       _init().catchError((_) {}); // sin permiso se sigue viendo la lista dentro de la app
       sync();
       _timer = Timer.periodic(const Duration(seconds: syncSeconds), (_) => sync());
-    } else {
-      _items.clear();
-      _since = null;
-      unread = 0;
-      _firstLoad = true;
-      notifyListeners();
     }
+    notifyListeners();
   }
 
   Future<void> sync() async {
     if (_busy) return;
     _busy = true;
+    final session = _session;
     try {
-      final r = await api.get('/notifications', {if (_since != null) 'since': _since!});
+      final r = await api.get('/notifications', {'since': ?_since});
+      if (session != _session) return;
       final fresh = <AppNotification>[];
+      var dirty = false;
       for (final j in r['data'] as List) {
         final n = AppNotification.fromJson(j);
-        if (!_items.containsKey(n.id)) fresh.add(n);
+        final old = _items[n.id];
+        if (old == null) fresh.add(n);
+        if (old == null || old.read != n.read) dirty = true;
         _items[n.id] = n;
       }
       _since = r['server_time'];
       final newUnread = r['unread_count'] as int;
-      final changed = fresh.isNotEmpty || newUnread != unread;
+      final changed = dirty || newUnread != unread;
       unread = newUnread;
       if (!_firstLoad) {
         for (final n in fresh) {
@@ -85,7 +94,7 @@ class NotificationsState extends ChangeNotifier {
     } on ApiException {
       // se reintenta en el siguiente ciclo
     } finally {
-      _busy = false;
+      if (session == _session) _busy = false;
     }
   }
 
@@ -110,12 +119,8 @@ class NotificationsState extends ChangeNotifier {
 
   Future<void> markAllRead() async {
     await api.post('/notifications/read-all');
-    await sync();
     for (final n in _items.values.toList()) {
-      _items[n.id] = AppNotification.fromJson({
-        'id': n.id, 'message': n.message, 'type': n.type, 'order_id': n.orderId,
-        'read': true, 'created_at': n.createdAt?.toIso8601String(),
-      });
+      _items[n.id] = n.copyRead();
     }
     unread = 0;
     notifyListeners();

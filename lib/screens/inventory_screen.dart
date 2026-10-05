@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../models/product.dart';
 import '../services/api.dart';
@@ -80,15 +81,31 @@ class _StockSheetState extends State<_StockSheet> {
   bool _busy = false;
   String? _error;
 
+  @override
+  void dispose() {
+    for (final c in _qty.values) {
+      c.dispose();
+    }
+    super.dispose();
+  }
+
   Future<void> _save() async {
+    // Antes un texto no numérico se guardaba como 0: un "1O" dejaba la variante agotada sin avisar.
+    final rows = <Map<String, int>>[];
+    for (final e in _qty.entries) {
+      final q = int.tryParse(e.value.text.trim());
+      if (q == null || q < 0) {
+        setState(() => _error = 'Cantidad no válida: "${e.value.text}". Usa un número entero (0 o más).');
+        return;
+      }
+      rows.add({'id': e.key, 'qty': q});
+    }
     setState(() {
       _busy = true;
       _error = null;
     });
     try {
-      final r = await context.read<Api>().put('/seller/products/${widget.product.id}/stocks', {
-        'stocks': [for (final e in _qty.entries) {'id': e.key, 'qty': int.tryParse(e.value.text) ?? 0}],
-      });
+      final r = await context.read<Api>().put('/seller/products/${widget.product.id}/stocks', {'stocks': rows});
       if (!mounted) return;
       context.read<CatalogState>().apply(Product.fromJson(r));
       Navigator.pop(context, true);
@@ -111,7 +128,12 @@ class _StockSheetState extends State<_StockSheet> {
             Expanded(child: Text(s.variant.isEmpty ? 'Único' : s.variant)),
             SizedBox(
               width: 90,
-              child: TextField(controller: _qty[s.id], keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Cant.')),
+              child: TextField(
+                controller: _qty[s.id],
+                keyboardType: TextInputType.number,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                decoration: const InputDecoration(labelText: 'Cant.'),
+              ),
             ),
           ]),
         if (_error != null) Text(_error!, style: const TextStyle(color: Colors.red)),

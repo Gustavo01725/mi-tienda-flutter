@@ -32,7 +32,7 @@ class _UsersScreenState extends State<UsersScreen> {
 
   Future<void> _sync() async {
     try {
-      final r = await context.read<Api>().get('/sync/users', {if (_since != null) 'since': _since!});
+      final r = await context.read<Api>().get('/sync/users', {'since': ?_since});
       if (!mounted) return;
       setState(() {
         for (final j in r['changed'] as List) {

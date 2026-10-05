@@ -3,6 +3,9 @@ class Stock {
   final String? size, color, sku;
   final String variant;
   final double price;
+
+  /// Precio que cobra el carrito por esta variante (con el descuento del producto aplicado).
+  final double finalPrice;
   final int qty;
   Stock.fromJson(Map<String, dynamic> j)
       : id = j['id'],
@@ -11,6 +14,7 @@ class Stock {
         sku = j['sku'],
         variant = j['variant'] ?? '',
         price = (j['price'] as num).toDouble(),
+        finalPrice = ((j['final_price'] ?? j['price']) as num).toDouble(),
         qty = j['qty'];
 }
 
@@ -20,7 +24,7 @@ class Product {
   final String? category, brand, unit, shortDescription, description;
   final double unitPrice, price;
   final int discount, totalStock, lowStockQty;
-  final bool published, featured;
+  final bool published, approved, featured;
   final List<String> photos;
   final List<Stock> stocks;
   final DateTime? updatedAt;
@@ -40,6 +44,7 @@ class Product {
         totalStock = j['total_stock'] ?? 0,
         lowStockQty = j['low_stock_qty'] ?? 5,
         published = j['published'] ?? true,
+        approved = j['approved'] ?? true,
         featured = j['featured'] ?? false,
         photos = List<String>.from(j['photos'] ?? const []),
         stocks = (j['stocks'] as List? ?? const []).map((s) => Stock.fromJson(s)).toList(),

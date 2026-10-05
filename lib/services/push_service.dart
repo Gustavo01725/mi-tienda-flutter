@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart' show defaultTargetPlatform, TargetPlatform;
+import 'dart:async';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
@@ -14,15 +14,16 @@ class PushService {
 
   String? _token;
   bool _started = false;
+  StreamSubscription<String>? _refreshSub;
 
   /// True cuando FCM está operativo y registrado para el usuario actual.
   bool active = false;
 
   Future<bool> init() async {
-    if (_started) return active;
+    if (_started || kIsWeb) return active;
     _started = true;
     try {
-      await Firebase.initializeApp();
+      if (Firebase.apps.isEmpty) await Firebase.initializeApp();
       final fcm = FirebaseMessaging.instance;
       final perm = await fcm.requestPermission();
       if (perm.authorizationStatus == AuthorizationStatus.denied) return false;
@@ -30,9 +31,10 @@ class PushService {
       _token = await fcm.getToken();
       if (_token == null) return false;
       await _register(_token!);
-      fcm.onTokenRefresh.listen((t) {
+      // Una sola suscripción aunque se cierre y abra sesión varias veces.
+      _refreshSub ??= fcm.onTokenRefresh.listen((t) {
         _token = t;
-        _register(t);
+        if (active) _register(t);
       });
       active = true;
     } catch (e) {
@@ -53,11 +55,11 @@ class PushService {
   /// Al cerrar sesión el teléfono deja de recibir los avisos de esa cuenta.
   Future<void> unregister() async {
     final t = _token;
+    active = false;
+    _started = false;
     if (t == null) return;
     try {
       await api.delete('/devices', {'token': t});
     } catch (_) {}
-    _started = false;
-    active = false;
   }
 }

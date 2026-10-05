@@ -13,8 +13,8 @@ class OrdersScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final user = context.watch<AuthState>().user;
     final all = context.watch<OrdersState>().orders;
-    final mine = all.where((o) => o.userId == user?.id).toList();
-    final sales = all.where((o) => o.userId != user?.id && o.paid).toList();
+    final mine = all.where((o) => !o.isSale).toList();
+    final sales = all.where((o) => o.isSale).toList();
     final isSeller = user != null && (user.isSeller || user.isAdmin) && sales.isNotEmpty;
 
     Widget list(List<Order> orders) => RefreshIndicator(
@@ -28,7 +28,7 @@ class OrdersScreen extends StatelessWidget {
                       subtitle: Text('${o.paid ? 'Pagado' : 'Sin pagar'} · ${o.deliveryLabel}'),
                       trailing: Text('\$${o.total.toStringAsFixed(2)}'),
                       onTap: () => Navigator.push(
-                          context, MaterialPageRoute(builder: (_) => OrderDetailScreen(orderId: o.id, sellerView: o.userId != user?.id))),
+                          context, MaterialPageRoute(builder: (_) => OrderDetailScreen(orderId: o.id))),
                     ),
                 ]),
         );
@@ -44,12 +44,18 @@ class OrdersScreen extends StatelessWidget {
   }
 }
 
-/// Acciones del vendedor sobre un pedido (confirmar y enviar al almacén).
+final _inFlight = <int>{};
+
+/// Acciones del vendedor sobre un pedido (confirmar y enviar al almacén). Un doble toque no
+/// manda la acción dos veces.
 Future<void> sellerAction(BuildContext context, int orderId, String action) async {
+  if (!_inFlight.add(orderId)) return;
   try {
     final r = await context.read<Api>().post('/seller/orders/$orderId/$action');
     if (context.mounted) context.read<OrdersState>().apply(Order.fromJson(r));
   } catch (e) {
     if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+  } finally {
+    _inFlight.remove(orderId);
   }
 }

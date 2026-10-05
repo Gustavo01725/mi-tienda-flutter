@@ -5,7 +5,13 @@ import 'api.dart';
 
 class AuthState extends ChangeNotifier {
   final Api api;
-  AuthState(this.api);
+
+  AuthState(this.api) {
+    // Token rechazado por el servidor: se cierra la sesión local sin volver a llamar a la API.
+    api.onUnauthorized = () {
+      if (user != null) _clear();
+    };
+  }
 
   /// Se ejecuta antes de invalidar el token (p. ej. para desregistrar el push).
   Future<void> Function()? beforeLogout;
@@ -20,8 +26,9 @@ class AuthState extends ChangeNotifier {
       try {
         user = AppUser.fromJson(await api.get('/auth/me'));
       } on ApiException catch (e) {
-        // Token revocado o inválido: sesión cerrada. Si solo falló la red, se conserva el token.
-        if (!e.message.startsWith('Sin conexión')) {
+        // Solo un 401 significa token inválido. Sin red o con el servidor caído (5xx) el token se
+        // conserva: borrarlo cerraría la sesión del usuario por un fallo pasajero.
+        if (e.statusCode == 401) {
           api.token = null;
           await p.remove('token');
         }
@@ -34,7 +41,7 @@ class AuthState extends ChangeNotifier {
   Future<void> _store(Map<String, dynamic> r) async {
     api.token = r['token'];
     user = AppUser.fromJson(r['user']);
-    (await SharedPreferences.getInstance()).setString('token', api.token!);
+    await (await SharedPreferences.getInstance()).setString('token', api.token!);
     notifyListeners();
   }
 
@@ -51,9 +58,13 @@ class AuthState extends ChangeNotifier {
     try {
       await api.post('/auth/logout');
     } catch (_) {}
+    await _clear();
+  }
+
+  Future<void> _clear() async {
     api.token = null;
     user = null;
-    (await SharedPreferences.getInstance()).remove('token');
     notifyListeners();
+    await (await SharedPreferences.getInstance()).remove('token');
   }
 }
