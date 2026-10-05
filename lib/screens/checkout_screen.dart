@@ -68,6 +68,14 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       setState(() {
         _gateway = r['gateway'] == 'kushki' ? 'kushki' : 'stripe';
         _kushki = Map<String, dynamic>.from(r['kushki'] ?? {});
+        // Dirección guardada en la web (o de la compra anterior): solo rellena campos vacíos.
+        final saved = r['shipping'];
+        if (saved is Map) {
+          for (final e in _c.entries) {
+            final v = saved[e.key];
+            if (e.value.text.trim().isEmpty && v is String && v.trim().isNotEmpty) e.value.text = v;
+          }
+        }
       });
     } catch (_) {
       if (mounted) setState(() => _gatewayFailed = true);

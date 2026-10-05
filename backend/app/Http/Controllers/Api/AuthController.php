@@ -8,6 +8,8 @@ use App\Notifications\VerifyEmailNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
@@ -20,10 +22,20 @@ class AuthController extends Controller
             'device' => 'nullable|string|max:60',
         ]);
 
+        // 5 intentos fallidos por minuto para un mismo correo desde una misma IP.
+        $key = 'api-login:'.Str::lower($data['email']).'|'.$request->ip();
+        if (RateLimiter::tooManyAttempts($key, 5)) {
+            return response()->json([
+                'message' => 'Demasiados intentos. Prueba de nuevo en '.RateLimiter::availableIn($key).' segundos.',
+            ], 429);
+        }
+
         // Mismo criterio que la web: Auth::attempt sobre users.
         if (! Auth::validate(['email' => $data['email'], 'password' => $data['password']])) {
+            RateLimiter::hit($key, 60);
             throw ValidationException::withMessages(['email' => 'Correo o contraseña incorrectos.']);
         }
+        RateLimiter::clear($key);
 
         $user = User::where('email', $data['email'])->firstOrFail();
 

@@ -174,4 +174,14 @@ class CheckoutApiTest extends TestCase
         $this->as($customer)->postJson('/api/checkout/kushki', $this->kushkiPayload($customer))
             ->assertStatus(422)->assertJsonPath('message', 'Tarjeta no válida');
     }
+
+    public function test_gateway_returns_the_saved_shipping_address(): void
+    {
+        $customer = $this->makeCustomer();
+        $customer->addresses()->create($this->completeShippingAddress($customer) + ['is_default' => 1]);
+
+        $this->as($customer)->getJson('/api/checkout/gateway')->assertOk()
+            ->assertJsonPath('shipping.city', 'Quito')
+            ->assertJsonPath('shipping.address', 'Av. Siempre Viva 742');
+    }
 }

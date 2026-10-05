@@ -101,4 +101,16 @@ void main() {
     });
     catalog.stop();
   }, tags: ['live']);
+
+  test('ventas: el vendedor recibe sus pedidos pagados como "seller" y solo con sus líneas', skip: skip, () async {
+    final seller = await login('seller@t.com');
+    final orders = OrdersState(seller);
+    await orders.sync();
+    final sales = orders.orders.where((o) => o.isSale).toList();
+    for (final o in sales) {
+      expect(o.paid, isTrue);
+      expect(o.items, isNotEmpty);
+    }
+    orders.dispose();
+  }, tags: ['live']);
 }

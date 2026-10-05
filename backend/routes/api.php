@@ -12,9 +12,10 @@ use App\Http\Controllers\Api\SyncController;
 use App\Http\Controllers\Api\UserController;
 use Illuminate\Support\Facades\Route;
 
-// Público
-Route::post('/auth/login', [AuthController::class, 'login'])->middleware('throttle:10,1');
-Route::post('/auth/register', [AuthController::class, 'register'])->middleware('throttle:10,1');
+// Público. El límite por IP es amplio a propósito: en redes móviles con CGNAT muchos usuarios
+// comparten IP. El límite fino de intentos de contraseña va por correo+IP en AuthController::login.
+Route::post('/auth/login', [AuthController::class, 'login'])->middleware('throttle:60,1');
+Route::post('/auth/register', [AuthController::class, 'register'])->middleware('throttle:20,1');
 
 Route::get('/categories', [CatalogController::class, 'categories']);
 Route::get('/products', [CatalogController::class, 'products']);

@@ -36,11 +36,15 @@ class CheckoutController extends Controller
 
     public function __construct(private CheckoutService $checkout, private StripeService $stripe, private GeolocationService $geo) {}
 
-    /** Pasarela que corresponde al comprador (Ecuador → Kushki, resto → Stripe), igual que la web. */
+    /**
+     * Pasarela que corresponde al comprador (Ecuador → Kushki, resto → Stripe), igual que la web, y
+     * sus datos de envío guardados para rellenar el formulario (CheckoutController::index de la web).
+     */
     public function gateway(Request $request)
     {
         return response()->json([
             'gateway' => $this->geo->gatewayFor($request),
+            'shipping' => $request->user()->shippingSnapshot(),
             'kushki' => [
                 'public_id' => config('services.kushki.public_id'),
                 'env' => config('services.kushki.env'),

@@ -100,4 +100,18 @@ class AuthAndSellerApiTest extends TestCase
             ->assertOk()->assertJsonPath('total_stock', 7);
         $this->assertSame(7, (int) ProductStock::find($stock->id)->qty);
     }
+
+    public function test_password_guessing_is_limited_per_email_without_locking_out_other_users(): void
+    {
+        $victim = User::factory()->create(['password' => 'secret123']);
+        $other = User::factory()->create(['password' => 'secret123']);
+
+        foreach (range(1, 5) as $i) {
+            $this->postJson('/api/auth/login', ['email' => $victim->email, 'password' => 'nope'])->assertStatus(422);
+        }
+        $this->postJson('/api/auth/login', ['email' => $victim->email, 'password' => 'secret123'])->assertStatus(429);
+
+        // Otro usuario detrás de la misma IP (CGNAT) puede entrar.
+        $this->postJson('/api/auth/login', ['email' => $other->email, 'password' => 'secret123'])->assertOk();
+    }
 }

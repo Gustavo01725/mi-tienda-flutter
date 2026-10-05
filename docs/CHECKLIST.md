@@ -10,6 +10,7 @@ Marca cada punto. Si algo falla, ve a **Si falla** al final: los puntos de riesg
 - [ ] `bash tool/local-test/e2e.sh` (desde `.local-web`) termina con todo lo esperado. Si esto falla, la app no tiene nada que probar.
 - [ ] Claves **de prueba** en `.local-web/.env`: `STRIPE_KEY`, `STRIPE_SECRET`, `KUSHKI_ENV=test`, `KUSHKI_PUBLIC_MERCHANT_ID`, `KUSHKI_PRIVATE_MERCHANT_ID`. Luego `php artisan config:clear`.
 - [ ] Emulador: `API_URL=http://10.0.2.2:8000`. Teléfono real: la IP de tu PC en la red (`http://192.168.x.x:8000`) y ambos en la misma wifi.
+  `http://` solo funciona en compilaciones debug/profile (está habilitado en `android/app/src/debug` y `profile`); la release exige `https://`.
 
 ```bash
 flutter pub get
@@ -110,18 +111,19 @@ Requiere `google-services.json` en `android/app/`, `kreait/laravel-firebase` en 
 - [ ] `GET /api/orders/<id de otro usuario>` → 404.
 - [ ] Tras cerrar sesión el token anterior responde 401.
 - [ ] `APP_DEBUG=false` en producción (con `true` los errores 403 devuelven el stacktrace).
-- [ ] Producción: `API_URL` con **https** (Android bloquea http salvo en emulador/desarrollo).
+- [ ] Producción: `API_URL` con **https** (la compilación release no permite http).
 
 ## Si falla
 
 | Síntoma | Causa probable |
 |---|---|
-| "Sin conexión con el servidor" | `API_URL` mal (usa `10.0.2.2` en emulador), servidor sin `--host=0.0.0.0`, o http bloqueado en el teléfono |
+| "Sin conexión con el servidor" | `API_URL` mal (usa `10.0.2.2` en emulador), servidor sin `--host=0.0.0.0`, o compilación release contra `http://` |
 | Error de Gradle con *desugaring* / `compileSdk` | `android/app/build.gradle.kts` (desugar_jdk_libs) o versión de Android SDK |
 | Crash al abrir el PaymentSheet | `MainActivity` debe ser `FlutterFragmentActivity` y el tema AppCompat (`styles.xml`) |
 | Sync no trae cambios | Cambió el stock por SQL directo: el cursor usa `updated_at`; usa Eloquent o toca `products.updated_at` |
 | 422 "Esa combinación no está disponible" | La clave de variante no coincide con `product_stocks.variant` (se calcula con `size-color`) |
-| 429 al iniciar sesión | Límite de 10 intentos por minuto (`throttle:10,1`) |
+| 429 al iniciar sesión | 5 contraseñas fallidas por minuto para ese correo (o más de 60 intentos por minuto desde la misma IP) |
+| R8 "Missing classes" en release | Falta `android/app/proguard-rules.pro` o su referencia en `build.gradle.kts` (reglas de flutter_stripe) |
 | Imágenes sin cargar | `php artisan storage:link` y `APP_URL` correcto en la web |
 
 Cuando todo esté marcado, el siguiente paso es producción: web con HTTPS, `APP_DEBUG=false`, claves reales y webhook de Stripe/Kushki apuntando a la web pública.

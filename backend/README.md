@@ -67,4 +67,12 @@ Push con la app cerrada requiere Firebase (FCM); ver README principal.
 `tests/Feature/Api/` trae pruebas de la API (auth, carrito, checkout con Stripe/Kushki simulados, pedidos, sync,
 permisos y push). Cópialas a la web y corre `php artisan test`: usan los mismos ayudantes que las pruebas de la web
 (`Tests\Concerns\BuildsCheckoutData`). La de push se omite si `kreait/laravel-firebase` no está instalado.
-Verificado con la suite completa de la web: 231 pruebas en verde (con kreait/laravel-firebase 7.2 / firebase-php 8.5).
+Verificado con la suite completa de la web: 233 pruebas en verde (con kreait/laravel-firebase 7.2 / firebase-php 8.5).
+
+## Seguridad y límites
+
+- Inicio de sesión: 5 contraseñas fallidas por minuto por correo+IP, y 60 peticiones por minuto por IP (las redes
+  móviles con CGNAT comparten IP: un límite bajo por IP bloquearía a usuarios legítimos).
+- Checkout: un solo pago a la vez por usuario (lock en caché; la web usa `CACHE_STORE=database`, que lo soporta).
+  Un pedido con un pago de Stripe en curso no se modifica ni se cobra por Kushki.
+- Un vendedor solo ve pedidos pagados que llevan productos suyos, y solo sus líneas.
