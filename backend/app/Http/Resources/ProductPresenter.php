@@ -46,10 +46,23 @@ class ProductPresenter
                 'color' => $s->color,
                 'variant' => \App\Models\ProductStock::buildVariant($s->size, $s->color),
                 'price' => (float) $s->price,
+                // Lo que cobra el carrito por esta variante (mismo cálculo que CartController::add).
+                'final_price' => self::discounted($p, (float) $s->price),
                 'qty' => (int) $s->qty,
                 'sku' => $s->sku,
             ])->values(),
             'updated_at' => $p->updated_at?->toIso8601String(),
         ];
+    }
+
+    public static function discounted(Product $p, float $price): float
+    {
+        if ($p->discount <= 0) {
+            return round($price, 2);
+        }
+
+        return round($p->discount_type === 'percent'
+            ? $price * (1 - $p->discount / 100)
+            : max(0, $price - $p->discount), 2);
     }
 }

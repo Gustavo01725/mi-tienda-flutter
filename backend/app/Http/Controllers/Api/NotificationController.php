@@ -18,7 +18,6 @@ class NotificationController extends Controller
 {
     public function index(Request $request)
     {
-        $now = now();
         $q = $request->user()->notifications()->latest();
 
         if ($since = SyncCursor::parse($request->query('since'))) {
@@ -26,7 +25,7 @@ class NotificationController extends Controller
         }
 
         return response()->json([
-            'server_time' => $now->toIso8601String(),
+            'server_time' => SyncCursor::next(),
             'unread_count' => $request->user()->unreadNotifications()->count(),
             'data' => $q->limit(50)->get()->map(fn ($n) => [
                 'id' => $n->id,

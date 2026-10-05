@@ -17,16 +17,13 @@ class OrderController extends Controller
     {
         $orders = Order::with('orderDetails.product')->where('user_id', $request->user()->id)->latest('id')->get();
 
-        return response()->json($orders->map(fn ($o) => self::json($o))->values());
+        return response()->json($orders->map(fn ($o) => self::json($o, $request->user()->id))->values());
     }
 
     public function show(Request $request, $id)
     {
         $user = $request->user();
-        $order = Order::with('orderDetails.product')->where(function ($q) use ($user) {
-            $q->where('user_id', $user->id)
-                ->orWhereHas('orderDetails', fn ($d) => $d->where('seller_id', $user->id));
-        })->findOrFail($id);
+        $order = self::visibleTo($user->id)->with('orderDetails.product')->findOrFail($id);
 
         return response()->json(self::json($order, $user->id));
     }
@@ -34,19 +31,15 @@ class OrderController extends Controller
     /** Cambios desde `since`: pedidos propios y, si vende, los que contienen sus productos. */
     public function sync(Request $request)
     {
-        $now = now();
         $user = $request->user();
 
-        $q = Order::with('orderDetails.product')->where(function ($w) use ($user) {
-            $w->where('user_id', $user->id)
-                ->orWhereHas('orderDetails', fn ($d) => $d->where('seller_id', $user->id));
-        });
+        $q = self::visibleTo($user->id)->with('orderDetails.product');
         if ($since = SyncCursor::parse($request->query('since'))) {
             $q->where('updated_at', '>=', $since);
         }
 
         return response()->json([
-            'server_time' => $now->toIso8601String(),
+            'server_time' => SyncCursor::next(),
             'changed' => $q->get()->map(fn ($o) => self::json($o, $user->id))->values(),
         ]);
     }
@@ -111,23 +104,46 @@ class OrderController extends Controller
         return response()->json(self::json($order->fresh('orderDetails.product'), $user->id));
     }
 
+    /**
+     * Pedidos que puede ver un usuario: los suyos y, como vendedor, los PAGADOS que llevan productos
+     * suyos. Los pedidos sin pagar de otros clientes son carritos a medio pagar y no le incumben.
+     */
+    public static function visibleTo(int $userId)
+    {
+        return Order::where(function ($q) use ($userId) {
+            $q->where('user_id', $userId)->orWhere(fn ($s) => $s
+                ->where('payment_status', 'paid')
+                ->whereHas('orderDetails', fn ($d) => $d->where('seller_id', $userId)));
+        });
+    }
+
     public static function json(Order $o, ?int $viewerId = null): array
     {
+        // El vendedor solo ve sus líneas y el total de ellas, no lo que compró el cliente a otros vendedores.
+        $asSeller = $viewerId !== null && (int) $o->user_id !== $viewerId;
+        $details = $asSeller
+            ? $o->orderDetails->filter(fn ($d) => (int) $d->seller_id === $viewerId)
+            : $o->orderDetails;
+        $subtotal = $asSeller ? round($details->sum(fn ($d) => (float) $d->price * $d->quantity), 2) : (float) $o->subtotal;
+        $shipping = $asSeller ? round($details->sum(fn ($d) => (float) $d->shipping_cost), 2) : (float) $o->shipping_total;
+        $tax = $asSeller ? round($details->sum(fn ($d) => (float) $d->tax), 2) : (float) $o->tax_amount;
+
         return [
+            'role' => $asSeller ? 'seller' : 'buyer',
             'id' => $o->id,
             'code' => $o->code,
             'user_id' => $o->user_id,
             'status' => $o->status,
             'payment_status' => $o->payment_status,
             'delivery_status' => $o->delivery_status,
-            'subtotal' => (float) $o->subtotal,
-            'shipping_total' => (float) $o->shipping_total,
-            'tax_amount' => (float) $o->tax_amount,
-            'grand_total' => (float) $o->grand_total,
+            'subtotal' => $subtotal,
+            'shipping_total' => $shipping,
+            'tax_amount' => $tax,
+            'grand_total' => $asSeller ? round($subtotal + $shipping + $tax, 2) : (float) $o->grand_total,
             'shipping_address' => $o->shippingInfo(),
             'created_at' => $o->created_at?->toIso8601String(),
             'updated_at' => $o->updated_at?->toIso8601String(),
-            'items' => $o->orderDetails->map(fn ($d) => [
+            'items' => $details->map(fn ($d) => [
                 'id' => $d->id,
                 'product_id' => $d->product_id,
                 'name' => $d->product_name,

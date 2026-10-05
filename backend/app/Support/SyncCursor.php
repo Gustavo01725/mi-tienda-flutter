@@ -12,6 +12,19 @@ use Illuminate\Support\Carbon;
  */
 class SyncCursor
 {
+    /**
+     * Segundos que el cursor devuelto se queda atrás de "ahora". Una fila con updated_at justo antes
+     * de la consulta pero confirmada después no se pierde: llega en el siguiente ciclo. La app
+     * deduplica por id, así que repetir unas filas no cuesta nada.
+     */
+    public const MARGIN_SECONDS = 5;
+
+    /** Cursor para la siguiente consulta de la app. */
+    public static function next(): string
+    {
+        return now()->subSeconds(self::MARGIN_SECONDS)->toIso8601String();
+    }
+
     public static function parse(?string $since): ?Carbon
     {
         if (! $since) {

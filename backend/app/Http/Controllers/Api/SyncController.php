@@ -21,7 +21,6 @@ class SyncController extends Controller
 {
     public function products(Request $request)
     {
-        $now = now();
         $since = $request->query('since');
 
         $q = Product::active()->with(['stocks', 'category', 'brand']);
@@ -30,7 +29,7 @@ class SyncController extends Controller
         }
 
         return response()->json([
-            'server_time' => $now->toIso8601String(),
+            'server_time' => SyncCursor::next(),
             'changed' => $q->get()->map(fn ($p) => ProductPresenter::make($p))->values(),
             'active_ids' => Product::active()->pluck('id'),
         ]);
@@ -38,14 +37,13 @@ class SyncController extends Controller
 
     public function users(Request $request)
     {
-        $now = now();
         $q = User::query();
         if ($since = SyncCursor::parse($request->query('since'))) {
             $q->where('updated_at', '>=', $since);
         }
 
         return response()->json([
-            'server_time' => $now->toIso8601String(),
+            'server_time' => SyncCursor::next(),
             'changed' => $q->get()->map(fn ($u) => AuthController::userJson($u))->values(),
             'all_ids' => User::pluck('id'),
         ]);

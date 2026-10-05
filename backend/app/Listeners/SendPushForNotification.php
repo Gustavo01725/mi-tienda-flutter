@@ -41,16 +41,28 @@ class SendPushForNotification
             return;
         }
 
+        $title = $this->title($event->notification);
+        $orderId = isset($data['order_id']) ? (string) $data['order_id'] : null;
+
+        // Se envía después de responder (o al terminar el comando/trabajo): una llamada lenta a FCM
+        // no debe alargar ni tumbar la acción que generó el aviso (p. ej. "Enviar al almacén", que
+        // avisa a todos los admins). always: el aviso ya quedó guardado aunque la respuesta falle luego.
+        \Illuminate\Support\defer(fn () => $this->send($tokens, $title, $message, $orderId), always: true);
+    }
+
+    private function send(array $tokens, string $title, string $message, ?string $orderId): void
+    {
         try {
             $cloud = CloudMessage::new()
-                ->withNotification(FcmNotification::create($this->title($event->notification), $message))
-                ->withData(array_filter(['order_id' => isset($data['order_id']) ? (string) $data['order_id'] : null]));
+                ->withNotification(FcmNotification::create($title, $message))
+                ->withData(array_filter(['order_id' => $orderId]));
 
             $report = app(Messaging::class)->sendMulticast($cloud, $tokens);
 
-            // Tokens de teléfonos que desinstalaron la app: se limpian.
+            // Se limpian los tokens muertos: FCM marca como "unknown" los de apps desinstaladas o
+            // sesiones caducadas, e "invalid" los mal formados. Los demás fallos son transitorios.
             if ($report->hasFailures()) {
-                DeviceToken::whereIn('token', $report->invalidTokens())->delete();
+                DeviceToken::whereIn('token', [...$report->unknownTokens(), ...$report->invalidTokens()])->delete();
             }
         } catch (Throwable $e) {
             Log::warning('FCM: no se pudo enviar el push', ['error' => $e->getMessage()]);

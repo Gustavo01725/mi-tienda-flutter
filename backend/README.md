@@ -61,3 +61,10 @@ Push con la app cerrada requiere Firebase (FCM); ver README principal.
 5. El listener se descubre solo (Laravel 11/12 registra las clases de `app/Listeners` por el tipo de `handle()`): **no lo registres a mano**
    o cada aviso se enviaría dos veces. Mientras `kreait/laravel-firebase` no esté instalado, no hace nada.
    No hay que tocar las clases de notificación existentes: el listener reenvía como push cada aviso de `database`.
+
+## Pruebas
+
+`tests/Feature/Api/` trae pruebas de la API (auth, carrito, checkout con Stripe/Kushki simulados, pedidos, sync,
+permisos y push). Cópialas a la web y corre `php artisan test`: usan los mismos ayudantes que las pruebas de la web
+(`Tests\Concerns\BuildsCheckoutData`). La de push se omite si `kreait/laravel-firebase` no está instalado.
+Verificado con la suite completa de la web: 231 pruebas en verde (con kreait/laravel-firebase 7.2 / firebase-php 8.5).

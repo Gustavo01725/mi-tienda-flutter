@@ -28,7 +28,7 @@ class CatalogController extends Controller
         }
         $q->search($request->query('q'), ['name', 'short_description']);
 
-        $page = $q->latest('id')->paginate(min($request->integer('per_page', 20), 50));
+        $page = $q->latest('id')->paginate(max(1, min($request->integer('per_page', 20), 50)));
 
         return response()->json([
             'data' => $page->getCollection()->map(fn ($p) => ProductPresenter::make($p))->values(),

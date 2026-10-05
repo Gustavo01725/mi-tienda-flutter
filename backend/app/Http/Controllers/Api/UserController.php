@@ -12,7 +12,10 @@ class UserController extends Controller
     {
         $q = User::query()->latest('id');
         if ($s = trim((string) $request->query('q'))) {
-            $q->where(fn ($w) => $w->where('name', 'like', "%$s%")->orWhere('email', 'like', "%$s%"));
+            // LOWER en ambos lados: en PostgreSQL LIKE distingue mayúsculas (ver Product::scopeSearch).
+            $pattern = '%'.addcslashes(mb_strtolower($s), '\\%_').'%';
+            $q->where(fn ($w) => $w->whereRaw('LOWER(name) LIKE ? ESCAPE ?', [$pattern, '\\'])
+                ->orWhereRaw('LOWER(email) LIKE ? ESCAPE ?', [$pattern, '\\']));
         }
         $page = $q->paginate(30);
 

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\ProductPresenter;
 use App\Models\Cart;
 use App\Models\Product;
 use App\Models\ProductStock;
@@ -49,12 +50,7 @@ class CartController extends Controller
             return $this->fail("Solo hay {$stock->qty} unidades en stock");
         }
 
-        $price = (float) $stock->price;
-        if ($product->discount > 0) {
-            $price = $product->discount_type === 'percent'
-                ? $price * (1 - $product->discount / 100)
-                : max(0, $price - $product->discount);
-        }
+        $price = ProductPresenter::discounted($product, (float) $stock->price);
 
         $existing = Cart::where('user_id', $request->user()->id)
             ->where('product_id', $product->id)->where('variation', $variant)->first();
@@ -85,6 +81,11 @@ class CartController extends Controller
         $stock = $item->variation
             ? ProductStock::where('product_id', $item->product_id)->where('variant', $item->variation)->first()
             : ProductStock::where('product_id', $item->product_id)->first();
+
+        // Con el stock agotado (p. ej. vendido en la web) no se deja una línea con cantidad 0.
+        if ($stock && $stock->qty <= 0) {
+            return $this->fail('Producto agotado.');
+        }
 
         $item->update(['quantity' => min($data['quantity'], $stock?->qty ?? 999)]);
 

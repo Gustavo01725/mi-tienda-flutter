@@ -4,8 +4,10 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Notifications\VerifyEmailNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
@@ -44,8 +46,18 @@ class AuthController extends Controller
             'phone' => 'nullable|string|max:20',
         ]);
 
-        // user_type queda en su default ('customer'): no es asignable en masa.
-        $user = User::create($data);
+        // user_type no es asignable en masa: se fija aparte, como en RegisterController de la web.
+        // (Con el default de la columna, el modelo recién creado lo devolvía como null.)
+        $user = new User($data);
+        $user->user_type = 'customer';
+        $user->save();
+
+        // Igual que RegisterController de la web. Un fallo de correo no debe impedir el registro.
+        try {
+            $user->notify(new VerifyEmailNotification());
+        } catch (\Throwable $e) {
+            Log::warning('No se pudo enviar el correo de verificación (api)', ['user_id' => $user->id, 'error' => $e->getMessage()]);
+        }
 
         return response()->json([
             'token' => $user->createToken('flutter')->plainTextToken,

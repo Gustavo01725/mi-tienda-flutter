@@ -16,6 +16,7 @@ php artisan install:api --no-interaction || true
 
 # Parche: API + middleware + modelos
 cp -r "$HERE/backend/app/." app/
+mkdir -p tests/Feature/Api && cp "$HERE"/backend/tests/Feature/Api/*.php tests/Feature/Api/
 cp "$HERE/backend/routes/api.php" routes/api.php
 cp "$HERE"/backend/database/migrations/*.php database/migrations/
 python3 - <<'PY'

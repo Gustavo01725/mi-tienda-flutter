@@ -102,7 +102,7 @@ Requiere `google-services.json` en `android/app/`, `kreait/laravel-firebase` en 
 - [ ] App en segundo plano: el vendedor confirma un pedido → llega **un solo** push (sin duplicado local).
 - [ ] App cerrada del todo: llega el push; al tocarlo abre la app.
 - [ ] Cerrar sesión → la fila de `device_tokens` desaparece y ese teléfono ya no recibe avisos de esa cuenta.
-- [ ] ⚠️ Si no se envía nada: mira `laravel.log` por `FCM: no se pudo enviar`. `sendMulticast` puede llamarse `sendEachForMulticast` en tu versión de kreait.
+- [ ] Si no se envía nada: mira `laravel.log` por `FCM: no se pudo enviar` (credenciales o `FIREBASE_CREDENTIALS` mal puestas).
 
 ## 10. Seguridad y permisos (con curl, token de cliente)
 
