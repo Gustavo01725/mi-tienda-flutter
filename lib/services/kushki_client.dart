@@ -52,7 +52,12 @@ class KushkiClient {
     } catch (_) {
       throw KushkiException('No se pudo contactar a Kushki');
     }
-    final body = r.body.isEmpty ? null : jsonDecode(r.body);
+    dynamic body;
+    try {
+      body = r.bodyBytes.isEmpty ? null : jsonDecode(utf8.decode(r.bodyBytes));
+    } on FormatException {
+      body = null; // p. ej. una página de error HTML de un proxy
+    }
     if (r.statusCode == 200 && body is Map && body['token'] is String) return body['token'];
     throw KushkiException(body is Map && body['message'] != null ? '${body['message']}' : 'Tarjeta rechazada (${r.statusCode})');
   }
