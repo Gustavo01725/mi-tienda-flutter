@@ -15,6 +15,9 @@ a través de una API REST (la app nunca se conecta directo a la BD).
 
 ## Ejecutar
 
+Primero instala la API en la web (una vez): `tool/install-api.sh /ruta/a/mi-tienda`. Sin ella la app muestra
+"La web todavía no tiene instalada la API de la app".
+
 ```bash
 flutter pub get
 flutter run --dart-define=API_URL=https://tu-dominio.com   # emulador Android local: http://10.0.2.2:8000

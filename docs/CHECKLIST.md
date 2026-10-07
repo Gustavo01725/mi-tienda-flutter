@@ -6,6 +6,7 @@ Marca cada punto. Si algo falla, ve a **Si falla** al final: los puntos de riesg
 
 - [ ] Android Studio con un emulador (API 33+) o un teléfono con depuración USB.
 - [ ] `flutter doctor` sin errores en *Android toolchain*.
+- [ ] API instalada en la web: `tool/install-api.sh /ruta/a/mi-tienda` (no borra datos).
 - [ ] Web local arriba: `tool/local-test/setup.sh` y luego `cd .local-web && php artisan serve --host=0.0.0.0 --port=8000`.
 - [ ] `bash tool/local-test/e2e.sh` (desde `.local-web`) termina con todo lo esperado. Si esto falla, la app no tiene nada que probar.
 - [ ] Claves **de prueba** en `.local-web/.env`: `STRIPE_KEY`, `STRIPE_SECRET`, `KUSHKI_ENV=test`, `KUSHKI_PUBLIC_MERCHANT_ID`, `KUSHKI_PRIVATE_MERCHANT_ID`. Luego `php artisan config:clear`.

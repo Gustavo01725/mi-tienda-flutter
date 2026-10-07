@@ -4,7 +4,20 @@ La web no tiene API (solo Blade). Estos archivos añaden una API REST con Sanctu
 sobre **la misma base de datos y modelos**, que es lo que consume la app Flutter.
 Copia el contenido de esta carpeta dentro del repo web, respetando rutas.
 
-## Pasos
+## Instalación en un comando (recomendado)
+
+Desde la raíz de este repo, con la web en `/ruta/a/mi-tienda`:
+
+```bash
+tool/install-api.sh /ruta/a/mi-tienda
+```
+
+Instala Sanctum, copia los archivos de la API, aplica los 3 ajustes de abajo y ejecuta solo las migraciones
+pendientes: **no borra datos**. Se puede ejecutar de nuevo sin problema. Haz un commit de la web antes para
+revisar el `git diff`. Si la app muestra *"The route api/sync/products could not be found"* o *"La web todavía no
+tiene instalada la API"*, es que falta este paso.
+
+## Pasos manuales (lo que hace el instalador)
 
 1. `composer require laravel/sanctum` y `php artisan install:api`
    (crea `routes/api.php` y la migración de `personal_access_tokens`; sustituye `routes/api.php` por el de aquí).
