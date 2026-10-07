@@ -1,5 +1,11 @@
 # Mi Tienda (Flutter)
 
+La app replica el diseño de la web **guStore**: mismos logos (`assets/img/`, copiados de `public/assets/img`),
+fuente Open Sans, iconos Line Awesome, verde `#679941`, banner superior, barra de idioma/sesión, cabecera con
+pestañas Inicio / Productos / Pedidos / Billetera y la barra inferior con el carrito en el centro. Cada pantalla
+sigue su vista Blade: portada por secciones, productos, ficha (talla, color, cantidad), carrito, Secure Checkout,
+Mis pedidos, billetera, categorías, notificaciones, Mi perfil, login y registro.
+
 App móvil de la tienda web Laravel `gustavoryanflow45-hub/mi-tienda`. Comparte la misma base de datos
 a través de una API REST (la app nunca se conecta directo a la BD).
 

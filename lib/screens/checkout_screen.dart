@@ -1,12 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
+import 'package:line_awesome_flutter/line_awesome_flutter.dart';
 import 'package:provider/provider.dart';
 import '../services/api.dart';
 import '../services/auth_state.dart';
 import '../services/cart_state.dart';
 import '../services/kushki_client.dart';
+import '../services/nav_state.dart';
 import '../services/orders_state.dart';
+import '../theme.dart';
+import '../widgets/common.dart';
+import '../widgets/gu_scaffold.dart';
 
 /// Datos de envío + pago. La pasarela la decide la API como en la web (Ecuador → Kushki, resto →
 /// Stripe). El pedido se crea en el servidor al pulsar "Pagar" y lo marca pagado el cobro o el webhook.
@@ -32,10 +37,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   static const _fields = {
     'full_name': 'Nombre completo',
     'phone': 'Teléfono',
-    'email': 'Correo',
+    'email': 'Correo electrónico',
     'address': 'Dirección',
     'city': 'Ciudad',
-    'state': 'Provincia / estado',
+    'state': 'Provincia / Estado',
     'country': 'País',
     'postal_code': 'Código postal',
   };
@@ -101,10 +106,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   Future<void> _finish(String message) async {
     final cart = context.read<CartState>();
     final orders = context.read<OrdersState>();
-    final nav = Navigator.of(context);
+    final nav = context.read<NavState>();
     final messenger = ScaffoldMessenger.of(context);
     await Future.wait([cart.refresh(), orders.sync()]);
-    nav.popUntil((route) => route.isFirst);
+    nav.go(AppPage.orders);
     messenger.showSnackBar(SnackBar(content: Text(message), duration: const Duration(seconds: 6)));
   }
 
@@ -222,91 +227,216 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final total = context.watch<CartState>().cart.total;
-    return Scaffold(
-      appBar: AppBar(title: const Text('Pago')),
-      body: Form(
-        key: _form,
-        child: ListView(padding: const EdgeInsets.all(16), children: [
-          Text('Datos de envío', style: Theme.of(context).textTheme.titleMedium),
-          for (final e in _fields.entries)
+    final cart = context.watch<CartState>().cart;
+    final total = cart.total;
+    const title = TextStyle(fontSize: 14, fontWeight: FontWeight.w700);
+
+    Widget field(String key) => LabeledField(
+          label: '${_fields[key]}${_optional.contains(key) ? '' : ' *'}',
+          controller: _c[key]!,
+          keyboard: switch (key) {
+            'email' => TextInputType.emailAddress,
+            'phone' => TextInputType.phone,
+            _ => TextInputType.text,
+          },
+          validator: (v) => !_optional.contains(key) && (v == null || v.trim().isEmpty) ? 'Requerido' : null,
+        );
+
+    Widget small(TextEditingController c, String label, String? Function(String?) v, {int max = 4, bool obscure = false}) =>
+        Expanded(
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(label, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+            const SizedBox(height: 8),
             TextFormField(
-              controller: _c[e.key],
-              keyboardType: switch (e.key) {
-                'email' => TextInputType.emailAddress,
-                'phone' => TextInputType.phone,
-                _ => TextInputType.text,
-              },
-              decoration: InputDecoration(labelText: e.value),
-              validator: (v) => !_optional.contains(e.key) && (v == null || v.trim().isEmpty) ? 'Requerido' : null,
+              controller: c,
+              keyboardType: TextInputType.number,
+              obscureText: obscure,
+              inputFormatters: [..._digits, LengthLimitingTextInputFormatter(max)],
+              validator: v,
             ),
-          if (_gateway == 'kushki') ...[
-            const SizedBox(height: 16),
-            Text('Tarjeta (Kushki)', style: Theme.of(context).textTheme.titleMedium),
-            TextFormField(controller: _card['name'], decoration: const InputDecoration(labelText: 'Nombre en la tarjeta'), validator: _req),
-            TextFormField(
-                controller: _card['number'],
-                keyboardType: TextInputType.number,
-                inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[\d ]')), LengthLimitingTextInputFormatter(23)],
-                decoration: const InputDecoration(labelText: 'Número de tarjeta'),
-                validator: _cardNumber),
-            Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Expanded(
-                  child: TextFormField(
-                      controller: _card['month'],
-                      keyboardType: TextInputType.number,
-                      inputFormatters: [..._digits, LengthLimitingTextInputFormatter(2)],
-                      decoration: const InputDecoration(labelText: 'Mes (MM)'),
-                      validator: _month)),
-              const SizedBox(width: 12),
-              Expanded(
-                  child: TextFormField(
-                      controller: _card['year'],
-                      keyboardType: TextInputType.number,
-                      inputFormatters: [..._digits, LengthLimitingTextInputFormatter(4)],
-                      decoration: const InputDecoration(labelText: 'Año (AA)'),
-                      validator: _year)),
-              const SizedBox(width: 12),
-              Expanded(
-                  child: TextFormField(
-                      controller: _card['cvv'],
-                      keyboardType: TextInputType.number,
-                      obscureText: true,
-                      inputFormatters: [..._digits, LengthLimitingTextInputFormatter(4)],
-                      decoration: const InputDecoration(labelText: 'CVV'),
-                      validator: _cvv)),
-            ]),
-            Row(children: [
-              DropdownButton<String>(
-                value: _docType,
-                items: const [
-                  DropdownMenuItem(value: 'CC', child: Text('Cédula')),
-                  DropdownMenuItem(value: 'RUC', child: Text('RUC')),
-                  DropdownMenuItem(value: 'PP', child: Text('Pasaporte')),
-                ],
-                onChanged: _busy ? null : (v) => setState(() => _docType = v!),
+          ]),
+        );
+
+    return GuScaffold(
+      active: AppPage.cart,
+      slivers: [
+        SliverToBoxAdapter(
+          child: Form(
+            key: _form,
+            child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+              const Padding(
+                padding: EdgeInsets.fromLTRB(15, 22, 15, 16),
+                child: Row(children: [
+                  Icon(LineAwesomeIcons.lock_solid, color: AppColors.primary, size: 20),
+                  SizedBox(width: 8),
+                  Text('Secure Checkout', style: TextStyle(fontSize: 19, fontWeight: FontWeight.w700)),
+                ]),
               ),
-              const SizedBox(width: 12),
-              Expanded(child: TextFormField(controller: _card['doc'], decoration: const InputDecoration(labelText: 'N.º de documento'), validator: _req)),
+              GuCard(
+                padding: const EdgeInsets.all(20),
+                child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                  const Row(children: [
+                    Icon(LineAwesomeIcons.truck_solid, color: AppColors.primary, size: 20),
+                    SizedBox(width: 8),
+                    Text('Datos de envío', style: title),
+                  ]),
+                  const SizedBox(height: 12),
+                  const Divider(),
+                  const SizedBox(height: 16),
+                  for (final k in _fields.keys) field(k),
+                ]),
+              ),
+              GuCard(
+                padding: const EdgeInsets.all(20),
+                child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                  const Text('Datos de pago', style: title),
+                  const SizedBox(height: 12),
+                  const Divider(),
+                  const SizedBox(height: 16),
+                  if (_gateway == null && !_gatewayFailed)
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 24),
+                      child: Center(child: CircularProgressIndicator()),
+                    ),
+                  if (_gateway == 'stripe')
+                    const Padding(
+                      padding: EdgeInsets.only(bottom: 12),
+                      child: Text('Al pulsar "Pagar" se abrirá el formulario seguro de Stripe para tu tarjeta.',
+                          style: TextStyle(color: AppColors.muted, fontSize: 13)),
+                    ),
+                  if (_gateway == 'kushki') ...[
+                    LabeledField(label: 'Nombre en la tarjeta *', controller: _card['name']!, validator: _req),
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 16),
+                      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        const Text('Número de tarjeta *', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+                        const SizedBox(height: 8),
+                        TextFormField(
+                          controller: _card['number'],
+                          keyboardType: TextInputType.number,
+                          inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[\d ]')), LengthLimitingTextInputFormatter(23)],
+                          decoration: const InputDecoration(hintText: '0000 0000 0000 0000'),
+                          validator: _cardNumber,
+                        ),
+                      ]),
+                    ),
+                    Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      small(_card['month']!, 'Mes *', _month, max: 2),
+                      const SizedBox(width: 10),
+                      small(_card['year']!, 'Año *', _year),
+                      const SizedBox(width: 10),
+                      small(_card['cvv']!, 'CVV *', _cvv, obscure: true),
+                    ]),
+                    const SizedBox(height: 16),
+                    const Text('Documento *', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 8),
+                    Row(children: [
+                      Container(
+                        height: 46,
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        decoration: BoxDecoration(border: Border.all(color: AppColors.border), borderRadius: BorderRadius.circular(4)),
+                        child: DropdownButtonHideUnderline(
+                          child: DropdownButton<String>(
+                            value: _docType,
+                            style: const TextStyle(fontFamily: 'OpenSans', fontSize: 14, color: AppColors.text),
+                            items: const [
+                              DropdownMenuItem(value: 'CC', child: Text('Cédula')),
+                              DropdownMenuItem(value: 'RUC', child: Text('RUC')),
+                              DropdownMenuItem(value: 'PP', child: Text('Pasaporte')),
+                            ],
+                            onChanged: _busy ? null : (v) => setState(() => _docType = v!),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(child: TextFormField(controller: _card['doc'], validator: _req, decoration: const InputDecoration(hintText: 'Número'))),
+                    ]),
+                    const SizedBox(height: 18),
+                  ],
+                  if (_gatewayFailed)
+                    OutlinedButton.icon(
+                      onPressed: _loadGateway,
+                      icon: const Icon(Icons.refresh),
+                      label: const Text('No se pudo preparar el pago. Reintentar'),
+                    )
+                  else if (_gateway != null)
+                    FilledButton(
+                      style: FilledButton.styleFrom(minimumSize: const Size(0, 48)),
+                      onPressed: _busy || total <= 0 ? null : _pay,
+                      child: _busy
+                          ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                          : Text('Pagar ${money(total)}', style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+                    ),
+                  if (_error != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 12),
+                      child: Text(_error!, style: const TextStyle(color: AppColors.danger, fontSize: 13)),
+                    ),
+                  const SizedBox(height: 14),
+                  Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    const Icon(LineAwesomeIcons.shield_alt_solid, size: 14, color: AppColors.muted3),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        'Procesado por ${_gateway == 'kushki' ? 'Kushki' : 'Stripe'} — tu tarjeta nunca pasa por nuestros servidores',
+                        style: const TextStyle(fontSize: 12, color: AppColors.muted3),
+                      ),
+                    ),
+                  ]),
+                ]),
+              ),
+              GuCard(
+                padding: const EdgeInsets.all(20),
+                child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                  const Text('Resumen del pedido', style: title),
+                  const SizedBox(height: 12),
+                  const Divider(),
+                  const SizedBox(height: 12),
+                  for (final i in cart.items)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        ClipRRect(borderRadius: BorderRadius.circular(4), child: SizedBox(width: 48, height: 48, child: NetImg(i.thumbnail))),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                            Text(i.name, style: const TextStyle(fontWeight: FontWeight.w700)),
+                            const SizedBox(height: 4),
+                            Wrap(spacing: 6, crossAxisAlignment: WrapCrossAlignment.center, children: [
+                              VariantChips(i.parts, fallback: i.variantLabel),
+                              Text('× ${i.quantity}', style: const TextStyle(fontSize: 12, color: AppColors.muted2)),
+                            ]),
+                          ]),
+                        ),
+                        Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+                          Text(money(i.subtotal), style: const TextStyle(fontWeight: FontWeight.w700)),
+                          if (i.shippingCost > 0)
+                            Text('+ ${money(i.shippingCost)} envío', style: const TextStyle(fontSize: 11, color: AppColors.muted2)),
+                        ]),
+                      ]),
+                    ),
+                  const Divider(),
+                  const SizedBox(height: 8),
+                  SummaryRow('Subtotal', money(cart.subtotal)),
+                  SummaryRow('Envío', money(cart.shipping)),
+                  SummaryRow('Impuesto', money(cart.tax)),
+                  const SizedBox(height: 6),
+                  const Divider(),
+                  const SizedBox(height: 6),
+                  SummaryRow('Total', money(total), big: true, green: true),
+                  const SizedBox(height: 6),
+                  Center(
+                    child: TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('← Editar carrito', style: TextStyle(color: AppColors.muted2, fontWeight: FontWeight.w400)),
+                    ),
+                  ),
+                ]),
+              ),
             ]),
-          ],
-          if (_error != null) Padding(padding: const EdgeInsets.only(top: 12), child: Text(_error!, style: const TextStyle(color: Colors.red))),
-          const SizedBox(height: 20),
-          if (_gatewayFailed)
-            OutlinedButton.icon(
-              onPressed: _loadGateway,
-              icon: const Icon(Icons.refresh),
-              label: const Text('No se pudo preparar el pago. Reintentar'),
-            )
-          else
-            FilledButton(
-              onPressed: _busy || _gateway == null || total <= 0 ? null : _pay,
-              child: _busy || _gateway == null
-                  ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                  : Text('Pagar \$${total.toStringAsFixed(2)}'),
-            ),
-        ]),
-      ),
+          ),
+        ),
+      ],
     );
   }
 }

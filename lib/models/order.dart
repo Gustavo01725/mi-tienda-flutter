@@ -1,13 +1,17 @@
+import 'variant_parts.dart';
+
 class OrderItem {
   final String name, thumbnail, variantLabel;
   final double price;
   final int quantity;
+  final VariantParts parts;
   OrderItem.fromJson(Map<String, dynamic> j)
       : name = j['name'] ?? '',
         thumbnail = j['thumbnail'] ?? '',
         variantLabel = j['variant_label'] ?? '',
         price = (j['price'] as num).toDouble(),
-        quantity = j['quantity'];
+        quantity = j['quantity'],
+        parts = VariantParts.fromJson(j['variant_parts']);
 }
 
 class Order {
@@ -16,7 +20,7 @@ class Order {
 
   /// 'buyer' si es una compra del usuario, 'seller' si es una venta suya (solo trae sus líneas).
   final String role;
-  final double total;
+  final double total, subtotal, shippingTotal, taxAmount;
   final List<OrderItem> items;
   final Map<String, dynamic> shipping;
   final DateTime? createdAt, updatedAt;
@@ -30,6 +34,9 @@ class Order {
         deliveryStatus = j['delivery_status'] ?? 'pending',
         role = j['role'] ?? 'buyer',
         total = (j['grand_total'] as num).toDouble(),
+        subtotal = ((j['subtotal'] ?? j['grand_total']) as num).toDouble(),
+        shippingTotal = ((j['shipping_total'] ?? 0) as num).toDouble(),
+        taxAmount = ((j['tax_amount'] ?? 0) as num).toDouble(),
         items = (j['items'] as List).map((e) => OrderItem.fromJson(e)).toList(),
         shipping = Map<String, dynamic>.from(j['shipping_address'] is Map ? j['shipping_address'] : {}),
         createdAt = DateTime.tryParse(j['created_at'] ?? ''),
@@ -38,6 +45,8 @@ class Order {
   bool get paid => paymentStatus == 'paid';
 
   bool get isSale => role == 'seller';
+
+  String get paymentLabel => paid ? 'Pagado' : (status == 'fallido' ? 'Pago fallido' : 'Sin pagar');
 
   String get deliveryLabel => const {
         'pending': 'Pendiente',

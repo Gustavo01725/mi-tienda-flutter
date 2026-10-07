@@ -75,4 +75,15 @@ class ProfileWalletCatalogApiTest extends TestCase
         $this->assertSame(config('variants.colors.negro.hex'), $stock['color_hex']);
         $this->assertNotEmpty($stock['color_label']);
     }
+
+    public function test_sizes_come_in_the_web_order_not_the_stock_row_order(): void
+    {
+        $seller = $this->makeSeller();
+        $product = $this->productWithStock($seller, ['L-negro' => 1, 'M-negro' => 1]); // L creada antes que M
+        $product->update(['variant_type' => 'apparel']);
+
+        $p = $this->getJson('/api/sync/products')->json('changed.0');
+        $this->assertSame(['M', 'L'], $p['sizes']);
+        $this->assertSame(['negro'], $p['colors']);
+    }
 }

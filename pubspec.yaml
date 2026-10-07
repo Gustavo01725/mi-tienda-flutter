@@ -42,6 +42,8 @@ dependencies:
   flutter_local_notifications: ^22.3.1
   firebase_core: ^4.15.0
   firebase_messaging: ^16.7.0
+  line_awesome_flutter: ^3.0.1
+  url_launcher: ^6.3.3
 
 dev_dependencies:
   flutter_test:
@@ -64,6 +66,22 @@ flutter:
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
+
+  # Mismos recursos que la web guStore (public/assets/img) y su fuente, Open Sans (OFL).
+  assets:
+    - assets/img/
+
+  fonts:
+    - family: OpenSans
+      fonts:
+        - asset: assets/fonts/OpenSans-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/OpenSans-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/OpenSans-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/OpenSans-ExtraBold.ttf
+          weight: 800
 
   # To add assets to your application, add an assets section, like this:
   # assets:

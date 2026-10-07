@@ -1,9 +1,13 @@
+import 'variant_parts.dart';
+
 class CartItem {
   final int id, productId, quantity;
   final String name, thumbnail, variantLabel;
   final String? variation;
   final double price;
   final int? availableStock;
+  final double shippingCost;
+  final VariantParts parts;
 
   CartItem.fromJson(Map<String, dynamic> j)
       : id = j['id'],
@@ -14,7 +18,11 @@ class CartItem {
         variantLabel = j['variant_label'] ?? '',
         variation = j['variation'],
         price = (j['price'] as num).toDouble(),
-        availableStock = j['available_stock'];
+        availableStock = j['available_stock'],
+        shippingCost = ((j['shipping_cost'] ?? 0) as num).toDouble(),
+        parts = VariantParts.fromJson(j['variant_parts']);
+
+  double get subtotal => price * quantity;
 }
 
 class Cart {

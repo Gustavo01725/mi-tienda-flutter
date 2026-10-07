@@ -41,6 +41,9 @@ class ProductPresenter
             'shipping_cost' => (float) $p->shipping_cost,
             'num_of_sale' => (int) $p->num_of_sale,
             'size_label' => $p->sizeLabel(),
+            // Mismo orden que el selector de la web (config/variants.php), no el de las filas de stock.
+            'sizes' => $p->availableSizes(),
+            'colors' => $p->availableColors(),
             'created_at' => $p->created_at?->toIso8601String(),
             'total_stock' => (int) $p->stocks->sum('qty'),
             'stocks' => $p->stocks->map(fn ($s) => [

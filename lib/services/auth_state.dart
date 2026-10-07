@@ -38,18 +38,34 @@ class AuthState extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> _store(Map<String, dynamic> r) async {
+  /// [remember] = "Recordarme": si no se marca, la sesión dura hasta cerrar la app.
+  Future<void> _store(Map<String, dynamic> r, {bool remember = true}) async {
     api.token = r['token'];
     user = AppUser.fromJson(r['user']);
-    await (await SharedPreferences.getInstance()).setString('token', api.token!);
+    final p = await SharedPreferences.getInstance();
+    if (remember) {
+      await p.setString('token', api.token!);
+    } else {
+      await p.remove('token');
+    }
     notifyListeners();
   }
 
-  Future<void> login(String email, String password) async =>
-      _store(await api.post('/auth/login', {'email': email, 'password': password, 'device': 'flutter'}));
+  Future<void> login(String email, String password, {bool remember = true}) async => _store(
+        await api.post('/auth/login', {'email': email, 'password': password, 'device': 'flutter'}),
+        remember: remember,
+      );
 
-  Future<void> register(String name, String email, String password) async =>
-      _store(await api.post('/auth/register', {'name': name, 'email': email, 'password': password}));
+  Future<void> register(String name, String email, String password, {String? phone}) async => _store(await api.post(
+        '/auth/register',
+        {'name': name, 'email': email, 'password': password, if (phone != null && phone.isNotEmpty) 'phone': phone},
+      ));
+
+  /// Datos actualizados desde "Mi perfil".
+  void updateUser(AppUser u) {
+    user = u;
+    notifyListeners();
+  }
 
   Future<void> logout() async {
     try {

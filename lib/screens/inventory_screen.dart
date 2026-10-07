@@ -4,6 +4,11 @@ import 'package:provider/provider.dart';
 import '../models/product.dart';
 import '../services/api.dart';
 import '../services/catalog_state.dart';
+import '../services/nav_state.dart';
+import '../theme.dart';
+import '../widgets/common.dart';
+import '../widgets/gu_scaffold.dart';
+import 'package:line_awesome_flutter/line_awesome_flutter.dart';
 
 /// Inventario del vendedor/admin. Los cambios van a la API y de ahí a la web.
 class InventoryScreen extends StatefulWidget {
@@ -42,29 +47,65 @@ class _InventoryScreenState extends State<InventoryScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Mi inventario')),
-      body: _error != null
-          ? Center(child: Text(_error!))
-          : _items == null
-              ? const Center(child: CircularProgressIndicator())
-              : RefreshIndicator(
-                  onRefresh: _load,
-                  child: ListView(children: [
-                    for (final p in _items!)
-                      ListTile(
-                        title: Text(p.name),
-                        subtitle: Text('${p.published ? 'Publicado' : 'Oculto'} · \$${p.unitPrice.toStringAsFixed(2)}'),
-                        trailing: Chip(
-                          label: Text('${p.totalStock}'),
-                          backgroundColor: p.lowStock ? Colors.red.shade100 : null,
+    return GuScaffold(
+      active: AppPage.account,
+      onRefresh: _load,
+      slivers: [
+        const SliverToBoxAdapter(
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(15, 24, 15, 16),
+            child: Row(children: [
+              Icon(LineAwesomeIcons.boxes_solid, color: AppColors.primary),
+              SizedBox(width: 8),
+              Text('Mi inventario', style: TextStyle(fontSize: 19, fontWeight: FontWeight.w700)),
+            ]),
+          ),
+        ),
+        if (_error != null)
+          SliverToBoxAdapter(child: GuCard(child: Text(_error!, style: const TextStyle(color: AppColors.danger))))
+        else if (_items == null)
+          const SliverToBoxAdapter(child: Padding(padding: EdgeInsets.all(40), child: Center(child: CircularProgressIndicator())))
+        else if (_items!.isEmpty)
+          const SliverToBoxAdapter(child: GuCard(child: EmptyState(icon: LineAwesomeIcons.box_open_solid, text: 'Todavía no tienes productos.')))
+        else
+          SliverToBoxAdapter(
+            child: GuCard(
+              padding: EdgeInsets.zero,
+              child: Column(children: [
+                for (var i = 0; i < _items!.length; i++) ...[
+                  if (i > 0) const Divider(),
+                  InkWell(
+                    onTap: () => _edit(_items![i]),
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Row(children: [
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(4),
+                          child: SizedBox(width: 48, height: 48, child: NetImg(_items![i].thumbnail)),
                         ),
-                        onTap: () => _edit(p),
-                      ),
-                  ]),
-                ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                            Text(_items![i].name, style: const TextStyle(fontWeight: FontWeight.w700)),
+                            const SizedBox(height: 4),
+                            Text('${_items![i].published ? 'Publicado' : 'Oculto'} · ${money(_items![i].unitPrice)}',
+                                style: const TextStyle(fontSize: 12, color: AppColors.muted2)),
+                          ]),
+                        ),
+                        Pill('${_items![i].totalStock} uds',
+                            color: _items![i].lowStock ? AppColors.danger : AppColors.primary,
+                            background: _items![i].lowStock ? AppColors.dangerSoft : AppColors.softPrimary),
+                      ]),
+                    ),
+                  ),
+                ],
+              ]),
+            ),
+          ),
+      ],
     );
   }
+
 }
 
 class _StockSheet extends StatefulWidget {
@@ -122,7 +163,10 @@ class _StockSheetState extends State<_StockSheet> {
     return Padding(
       padding: EdgeInsets.fromLTRB(16, 16, 16, 16 + MediaQuery.of(context).viewInsets.bottom),
       child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(widget.product.name, style: Theme.of(context).textTheme.titleMedium),
+        Text(widget.product.name, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+        const SizedBox(height: 4),
+        const Text('Cantidad en stock por variante', style: TextStyle(color: AppColors.muted)),
+        const SizedBox(height: 12),
         for (final s in widget.product.stocks)
           Row(children: [
             Expanded(child: Text(s.variant.isEmpty ? 'Único' : s.variant)),

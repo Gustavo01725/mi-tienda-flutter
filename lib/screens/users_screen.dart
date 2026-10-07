@@ -4,6 +4,11 @@ import 'package:provider/provider.dart';
 import '../config.dart';
 import '../models/user.dart';
 import '../services/api.dart';
+import '../services/nav_state.dart';
+import '../theme.dart';
+import '../widgets/common.dart';
+import '../widgets/gu_scaffold.dart';
+import 'package:line_awesome_flutter/line_awesome_flutter.dart';
 
 /// Lista de usuarios (solo admin), refrescada con el mismo ciclo que el catálogo.
 class UsersScreen extends StatefulWidget {
@@ -52,19 +57,53 @@ class _UsersScreenState extends State<UsersScreen> {
   @override
   Widget build(BuildContext context) {
     final list = _users.values.toList()..sort((a, b) => b.id.compareTo(a.id));
-    return Scaffold(
-      appBar: AppBar(title: Text('Usuarios (${list.length})')),
-      body: _error != null && list.isEmpty
-          ? Center(child: Text(_error!))
-          : ListView(children: [
-              for (final u in list)
-                ListTile(
-                  leading: CircleAvatar(child: Text(u.name.isEmpty ? '?' : u.name[0].toUpperCase())),
-                  title: Text(u.name),
-                  subtitle: Text('${u.email} · ${u.userType}'),
-                  trailing: u.banned ? const Icon(Icons.block, color: Colors.red) : null,
-                ),
+    return GuScaffold(
+      active: AppPage.account,
+      onRefresh: _sync,
+      slivers: [
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(15, 24, 15, 16),
+            child: Row(children: [
+              const Icon(LineAwesomeIcons.users_solid, color: AppColors.primary),
+              const SizedBox(width: 8),
+              Text('Usuarios (${list.length})', style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w700)),
             ]),
+          ),
+        ),
+        if (_error != null && list.isEmpty)
+          SliverToBoxAdapter(child: GuCard(child: Text(_error!, style: const TextStyle(color: AppColors.danger))))
+        else
+          SliverToBoxAdapter(
+            child: GuCard(
+              padding: EdgeInsets.zero,
+              child: Column(children: [
+                for (var i = 0; i < list.length; i++) ...[
+                  if (i > 0) const Divider(),
+                  Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Row(children: [
+                      ClipOval(child: Image.asset('assets/img/avatar-place.png', width: 36, height: 36)),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                          Text(list[i].name, style: const TextStyle(fontWeight: FontWeight.w700)),
+                          Text(list[i].email, style: const TextStyle(fontSize: 12, color: AppColors.muted2)),
+                        ]),
+                      ),
+                      if (list[i].banned)
+                        Pill('Suspendido', color: AppColors.danger, background: AppColors.dangerSoft)
+                      else
+                        Pill(switch (list[i].userType) { 'admin' => 'Admin', 'seller' => 'Vendedor', _ => 'Cliente' },
+                            color: AppColors.primary, background: AppColors.softPrimary),
+                    ]),
+                  ),
+                ],
+              ]),
+            ),
+          ),
+      ],
     );
   }
+
 }

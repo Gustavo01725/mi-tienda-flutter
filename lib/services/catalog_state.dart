@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import '../config.dart';
+import '../models/category.dart';
 import '../models/product.dart';
 import 'api.dart';
 
@@ -23,10 +24,31 @@ class CatalogState extends ChangeNotifier {
 
   Product? byId(int id) => _items[id];
 
+  /// Categorías activas (con imagen y nº de productos), para "Categorías" y la portada.
+  List<ShopCategory> categories = [];
+  int _ticks = 0;
+
+  ShopCategory? categoryById(int? id) => id == null ? null : categories.where((c) => c.id == id).firstOrNull;
+
+  Future<void> loadCategories() async {
+    try {
+      final r = await api.get('/categories') as List;
+      categories = r.map((j) => ShopCategory.fromJson(j)).toList();
+      _changed();
+    } on ApiException {
+      // se reintenta en el siguiente ciclo
+    }
+  }
+
   void start() {
     stop();
     sync();
-    _timer = Timer.periodic(const Duration(seconds: syncSeconds), (_) => sync());
+    loadCategories();
+    // Las categorías cambian poco: se refrescan cada ~minuto, los productos en cada ciclo.
+    _timer = Timer.periodic(const Duration(seconds: syncSeconds), (_) {
+      sync();
+      if (++_ticks % 12 == 0 || categories.isEmpty) loadCategories();
+    });
   }
 
   void stop() => _timer?.cancel();

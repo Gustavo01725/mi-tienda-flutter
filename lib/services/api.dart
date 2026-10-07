@@ -59,9 +59,13 @@ class Api {
       final first = (body['errors'] as Map).values.first;
       throw ApiException(first is List && first.isNotEmpty ? '${first.first}' : '$first', statusCode: r.statusCode);
     }
-    final msg = body is Map && body['message'] is String && (body['message'] as String).isNotEmpty
+    var msg = body is Map && body['message'] is String && (body['message'] as String).isNotEmpty
         ? body['message'] as String
         : _fallback(r.statusCode);
+    // Laravel responde así cuando la web todavía no tiene el parche de la API (backend/).
+    if (r.statusCode == 404 && msg.startsWith('The route api/')) {
+      msg = 'La web todavía no tiene instalada la API de la app. Aplica el parche backend/ en la web (ver backend/README.md).';
+    }
     throw ApiException(msg, statusCode: r.statusCode);
   }
 
