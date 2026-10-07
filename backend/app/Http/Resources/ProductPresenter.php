@@ -39,11 +39,17 @@ class ProductPresenter
             'published' => (bool) $p->published,
             'approved' => (bool) $p->approved,
             'shipping_cost' => (float) $p->shipping_cost,
+            'num_of_sale' => (int) $p->num_of_sale,
+            'size_label' => $p->sizeLabel(),
+            'created_at' => $p->created_at?->toIso8601String(),
             'total_stock' => (int) $p->stocks->sum('qty'),
             'stocks' => $p->stocks->map(fn ($s) => [
                 'id' => $s->id,
                 'size' => $s->size,
                 'color' => $s->color,
+                // Nombre y color de la paleta de la web (config/variants.php), para pintar el selector igual.
+                'color_label' => $s->color ? __(config("variants.colors.{$s->color}.label", ucfirst($s->color))) : null,
+                'color_hex' => $s->color ? config("variants.colors.{$s->color}.hex", '#888') : null,
                 'variant' => \App\Models\ProductStock::buildVariant($s->size, $s->color),
                 'price' => (float) $s->price,
                 // Lo que cobra el carrito por esta variante (mismo cálculo que CartController::add).

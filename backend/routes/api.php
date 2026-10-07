@@ -7,9 +7,11 @@ use App\Http\Controllers\Api\DeviceController;
 use App\Http\Controllers\Api\CheckoutController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\OrderController;
+use App\Http\Controllers\Api\ProfileController;
 use App\Http\Controllers\Api\SellerProductController;
 use App\Http\Controllers\Api\SyncController;
 use App\Http\Controllers\Api\UserController;
+use App\Http\Controllers\Api\WalletController;
 use Illuminate\Support\Facades\Route;
 
 // Público. El límite por IP es amplio a propósito: en redes móviles con CGNAT muchos usuarios
@@ -27,6 +29,11 @@ Route::get('/sync/products', [SyncController::class, 'products']);
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/auth/me', [AuthController::class, 'me']);
     Route::post('/auth/logout', [AuthController::class, 'logout']);
+
+    // Mi perfil y billetera (como /profile y /wallet de la web)
+    Route::put('/profile', [ProfileController::class, 'update']);
+    Route::put('/profile/password', [ProfileController::class, 'password']);
+    Route::get('/wallet', [WalletController::class, 'index']);
 
     // Push (tokens FCM)
     Route::post('/devices', [DeviceController::class, 'store']);

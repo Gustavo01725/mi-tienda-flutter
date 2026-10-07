@@ -122,6 +122,7 @@ class CartController extends Controller
                     'thumbnail' => uploaded_asset($i->product?->thumbnail),
                     'variation' => $i->variation,
                     'variant_label' => $i->variant_label,
+                    'variant_parts' => $i->variant_parts,
                     'quantity' => (int) $i->quantity,
                     'price' => (float) $i->price,
                     'shipping_cost' => (float) $i->shipping_cost,

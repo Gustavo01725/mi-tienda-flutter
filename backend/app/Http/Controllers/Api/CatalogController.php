@@ -10,10 +10,23 @@ use Illuminate\Http\Request;
 
 class CatalogController extends Controller
 {
+    /** Categorías activas con su imagen y cuántos productos publicados tienen (como /categories de la web). */
     public function categories()
     {
-        return Category::active()->orderBy('order')->orderBy('name')
-            ->get(['id', 'name', 'slug', 'parent_id', 'icon', 'variant_type']);
+        return Category::active()
+            ->withCount(['products as products_count' => fn ($q) => $q->active()])
+            ->orderBy('order')->orderBy('name')
+            ->get()
+            ->map(fn ($c) => [
+                'id' => $c->id,
+                'name' => $c->name,
+                'slug' => $c->slug,
+                'parent_id' => $c->parent_id,
+                'featured' => (bool) $c->featured,
+                'icon' => $c->icon ? uploaded_asset($c->icon) : null,
+                'banner' => $c->banner ? uploaded_asset($c->banner) : null,
+                'products_count' => (int) $c->products_count,
+            ])->values();
     }
 
     public function products(Request $request)

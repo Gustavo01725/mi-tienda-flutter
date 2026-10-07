@@ -149,6 +149,7 @@ class OrderController extends Controller
                 'name' => $d->product_name,
                 'thumbnail' => uploaded_asset($d->product?->thumbnail),
                 'variant_label' => $d->variant_label,
+                'variant_parts' => $d->variant_parts,
                 'price' => (float) $d->price,
                 'quantity' => (int) $d->quantity,
                 'seller_id' => $d->seller_id,
